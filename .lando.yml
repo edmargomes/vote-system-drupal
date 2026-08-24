@@ -9,8 +9,6 @@ config:
 services:
   appserver:
     overrides:
-      env_file:
-        - .env
       environment:
         XDEBUG_MODE: coverage
 
