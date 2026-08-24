@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="voting_system">
+  <description>Drupal coding standards for voting_system</description>
+
+  <!-- Directories to analyse -->
+  <file>web/modules/custom</file>
+  <file>web/themes/custom</file>
+
+  <!-- Exclusions -->
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+  <exclude-pattern>*/node_modules/*</exclude-pattern>
+
+  <!-- File extensions checked -->
+  <arg name="extensions" value="php,module,inc,install,theme,profile"/>
+
+  <!-- Coloured output with progress indicator -->
+  <arg name="colors"/>
+  <arg value="sp"/>
+
+  <!-- Applied standards -->
+  <rule ref="Drupal"/>
+  <rule ref="DrupalPractice"/>
+</ruleset>

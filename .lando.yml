@@ -1,0 +1,68 @@
+name: voting-system
+recipe: drupal11
+config:
+  webroot: web
+  php: '8.4'
+  database: mysql:8.4
+  composer_version: '2-latest'
+
+services:
+  appserver:
+    overrides:
+      environment:
+        XDEBUG_MODE: coverage
+
+  # Serves the HTML coverage report
+  coverage:
+    type: nginx
+    ssl: false
+    webroot: coverage/html
+
+proxy:
+  coverage:
+    - coverage.voting-system.lndo.site
+
+tooling:
+  phpunit:
+    service: appserver
+    cmd: ./vendor/bin/phpunit
+
+  test-unit:
+    service: appserver
+    cmd: ./vendor/bin/phpunit --testsuite=Unit
+
+  test-kernel:
+    service: appserver
+    cmd: ./vendor/bin/phpunit --testsuite=Kernel
+
+  test-contract:
+    service: appserver
+    cmd: ./vendor/bin/phpunit --testsuite=Contract
+
+  test-integration:
+    service: appserver
+    cmd: ./vendor/bin/phpunit --testsuite=Integration
+
+  coverage:
+    service: appserver
+    cmd: ./vendor/bin/phpunit --coverage-html coverage/html --coverage-clover coverage/clover.xml --coverage-text
+
+  coverage-unit:
+    service: appserver
+    cmd: ./vendor/bin/phpunit --testsuite=Unit --coverage-html coverage/html --coverage-text
+
+  phpcs:
+    service: appserver
+    cmd: ./vendor/bin/phpcs --standard=phpcs.xml.dist
+
+  phpcbf:
+    service: appserver
+    cmd: ./vendor/bin/phpcbf --standard=phpcs.xml.dist
+
+  phpstan:
+    service: appserver
+    cmd: ./vendor/bin/phpstan analyse --configuration=phpstan.neon
+
+  drush:
+    service: appserver
+    cmd: ./vendor/bin/drush

@@ -1,0 +1,12 @@
+parameters:
+  level: 5
+
+  paths:
+    - web/modules/custom
+    - web/themes/custom
+
+  excludePaths:
+    - web/modules/custom/*/tests
+
+  ignoreErrors:
+    # Add Drupal ecosystem false-positives here if needed

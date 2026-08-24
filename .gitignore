@@ -1,0 +1,32 @@
+# Composer dependencies
+/vendor/
+
+# Drupal core and contrib — managed by Composer
+/web/core
+/web/modules/contrib
+/web/themes/contrib
+/web/profiles/contrib
+/web/libraries
+
+# Drupal scaffold files (regenerated on composer install)
+/web/sites/default/settings.php
+/web/sites/default/settings.local.php
+/web/sites/default/files/
+
+# Sensitive config
+/web/sites/*/settings*.php
+/.env
+
+# Coverage reports — generated locally
+/coverage/
+
+# GrumPHP cache
+.grumphp.yml.cache
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+/.editorconfig
+/.gitattributes

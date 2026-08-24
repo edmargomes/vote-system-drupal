@@ -1,0 +1,26 @@
+grumphp:
+  hooks_dir: ~
+  stop_on_failure: true
+
+  tasks:
+
+    # 1. Check Drupal coding standards
+    phpcs:
+      standard: phpcs.xml.dist
+      show_sniffs_error_path: true
+      metadata:
+        priority: 10
+
+    # 2. Static analysis
+    phpstan:
+      configuration: phpstan.neon
+      use_grumphp_paths: false
+      metadata:
+        priority: 20
+
+    # 3. Unit tests only — fast, no Drupal bootstrap required
+    phpunit:
+      config_file: phpunit.xml
+      testsuite: Unit
+      metadata:
+        priority: 30

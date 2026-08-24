@@ -5,9 +5,9 @@ A custom Drupal 11 module implementing a poll/voting system. The REST API is bui
 ## Requirements
 
 - [Lando](https://lando.dev/) (local development environment)
-- PHP 8.3
+- PHP 8.4
 - Drupal 11
-- MySQL 8.0
+- MySQL 8.4
 
 ## Setup
 
@@ -128,15 +128,3 @@ web/modules/custom/voting_system/
     ├── Validator/
     └── EventSubscriber/
 ```
-
-## Architectural Decisions
-
-| Decision | Choice | Reason |
-|----------|--------|--------|
-| Public identifier | UUID | Portability; avoids ID collisions across environments |
-| Authentication | Custom token | No contrib dependency; auditable and revocable |
-| `user_id` on vote | Extracted from token | Never from the request body — prevents identity spoofing |
-| Duplicate vote | HTTP 409 Conflict | Semantically correct; 400 would be wrong |
-| Concurrency | DB transaction + unique constraint | More efficient than SELECT + INSERT; race-condition proof |
-| Images | Managed File | Native Drupal file system integration |
-| Results on vote | Returned in same response | Avoids an extra round-trip when `show_results=true` |
