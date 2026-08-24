@@ -76,7 +76,7 @@ class AdminResultsContractTest extends BrowserTestBase {
   }
 
   /**
-   * Each result row has option_id and total fields.
+   * Each result row exposes option_uuid and total, never an integer option_id.
    */
   public function testResultRowsHaveRequiredFields(): void {
     $admin = $this->drupalCreateUser(['administer voting']);
@@ -99,7 +99,7 @@ class AdminResultsContractTest extends BrowserTestBase {
 
     $this->drupalGet('/api/v1/questions/' . $question->uuid() . '/vote', [
       'method' => 'POST',
-      'body' => json_encode(['option_id' => (int) $option->id()]),
+      'body' => json_encode(['option_uuid' => $option->uuid()]),
       'headers' => [
         'Content-Type' => 'application/json',
         'Authorization' => 'Bearer ' . $voterToken,
@@ -112,8 +112,12 @@ class AdminResultsContractTest extends BrowserTestBase {
 
     $body = json_decode($this->getSession()->getPage()->getContent(), TRUE);
     $this->assertNotEmpty($body['results']);
-    $this->assertArrayHasKey('option_id', $body['results'][0]);
-    $this->assertArrayHasKey('total', $body['results'][0]);
+    $row = $body['results'][0];
+    $this->assertArrayHasKey('option_uuid', $row);
+    $this->assertArrayHasKey('total', $row);
+    $this->assertArrayNotHasKey('option_id', $row);
+    // Confirm the UUID matches the option that was voted on.
+    $this->assertSame($option->uuid(), $row['option_uuid']);
   }
 
 }

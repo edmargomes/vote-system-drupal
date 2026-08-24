@@ -47,7 +47,7 @@ class VotingGlobalDisabledTest extends BrowserTestBase {
 
     $this->drupalGet('/api/v1/questions/' . $question->uuid() . '/vote', [
       'method' => 'POST',
-      'body' => json_encode(['option_id' => (int) $option->id()]),
+      'body' => json_encode(['option_uuid' => $option->uuid()]),
       'headers' => [
         'Content-Type' => 'application/json',
         'Authorization' => 'Bearer ' . $token,
@@ -79,7 +79,7 @@ class VotingGlobalDisabledTest extends BrowserTestBase {
 
     $this->drupalGet('/api/v1/questions/' . $question->uuid() . '/vote', [
       'method' => 'POST',
-      'body' => json_encode(['option_id' => (int) $option->id()]),
+      'body' => json_encode(['option_uuid' => $option->uuid()]),
       'headers' => [
         'Content-Type' => 'application/json',
         'Authorization' => 'Bearer ' . $token,

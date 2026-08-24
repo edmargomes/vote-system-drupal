@@ -197,6 +197,30 @@ class AuthTokenServiceTest extends UnitTestCase {
   }
 
   /**
+   * @covers ::revoke
+   * @covers ::validate
+   */
+  public function testValidateReturnsFalseAfterRevocation(): void {
+    // Select returns no row — DB record was deleted by revoke().
+    $stmt = $this->createMock(StatementInterface::class);
+    $stmt->method('fetchObject')->willReturn(FALSE);
+
+    $this->database->method('select')->willReturn(
+      $this->buildSelectMock($stmt)
+    );
+
+    $delete = $this->createMock(Delete::class);
+    $delete->method('condition')->willReturnSelf();
+    $delete->method('execute')->willReturn(1);
+    $this->database->method('delete')->willReturn($delete);
+
+    $this->service->revoke('revoked-token');
+    $result = $this->service->validate('revoked-token');
+
+    $this->assertFalse($result);
+  }
+
+  /**
    * Builds a chainable select query mock that returns the given statement.
    */
   private function buildSelectMock(StatementInterface $stmt): MockObject {

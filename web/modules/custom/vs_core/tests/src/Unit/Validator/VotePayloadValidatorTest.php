@@ -31,8 +31,10 @@ class VotePayloadValidatorTest extends UnitTestCase {
   /**
    * @covers ::validate
    */
-  public function testValidatePassesWithValidPayload(): void {
-    $errors = $this->validator->validate(['option_id' => 1]);
+  public function testValidatePassesWithValidUuid(): void {
+    $errors = $this->validator->validate([
+      'option_uuid' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+    ]);
 
     $this->assertSame([], $errors);
   }
@@ -40,47 +42,41 @@ class VotePayloadValidatorTest extends UnitTestCase {
   /**
    * @covers ::validate
    */
-  public function testValidateFailsWhenOptionIdMissing(): void {
+  public function testValidateFailsWhenOptionUuidMissing(): void {
     $errors = $this->validator->validate([]);
 
     $this->assertNotEmpty($errors);
-    $this->assertContains('option_id is required', $errors);
+    $this->assertContains('option_uuid is required', $errors);
   }
 
   /**
    * @covers ::validate
    */
-  public function testValidateFailsWhenOptionIdIsZero(): void {
-    $errors = $this->validator->validate(['option_id' => 0]);
+  public function testValidateFailsWhenOptionUuidIsNotString(): void {
+    $errors = $this->validator->validate(['option_uuid' => 12345]);
 
     $this->assertNotEmpty($errors);
+    $this->assertContains('option_uuid must be a valid UUID string', $errors);
   }
 
   /**
    * @covers ::validate
    */
-  public function testValidateFailsWhenOptionIdIsNegative(): void {
-    $errors = $this->validator->validate(['option_id' => -5]);
+  public function testValidateFailsWhenOptionUuidIsEmptyString(): void {
+    $errors = $this->validator->validate(['option_uuid' => '']);
 
     $this->assertNotEmpty($errors);
+    $this->assertContains('option_uuid must be a valid UUID string', $errors);
   }
 
   /**
    * @covers ::validate
    */
-  public function testValidateFailsWhenOptionIdIsNotAnInteger(): void {
-    $errors = $this->validator->validate(['option_id' => 'abc']);
+  public function testValidateFailsWhenOptionUuidHasInvalidFormat(): void {
+    $errors = $this->validator->validate(['option_uuid' => 'not-a-uuid']);
 
     $this->assertNotEmpty($errors);
-  }
-
-  /**
-   * @covers ::validate
-   */
-  public function testValidateFailsWhenOptionIdIsFloat(): void {
-    $errors = $this->validator->validate(['option_id' => 1.5]);
-
-    $this->assertNotEmpty($errors);
+    $this->assertContains('option_uuid must be a valid UUID string', $errors);
   }
 
   /**
@@ -88,7 +84,7 @@ class VotePayloadValidatorTest extends UnitTestCase {
    */
   public function testValidateRejectsExtraUnknownFields(): void {
     $errors = $this->validator->validate([
-      'option_id' => 1,
+      'option_uuid' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
       'injected_field' => 'evil',
     ]);
 

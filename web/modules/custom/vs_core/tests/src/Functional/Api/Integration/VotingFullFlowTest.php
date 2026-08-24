@@ -79,10 +79,11 @@ class VotingFullFlowTest extends BrowserTestBase {
     $this->assertSame($question->uuid(), $detail['uuid']);
     $this->assertCount(2, $detail['options']);
 
-    // 5. Cast a vote.
+    // 5. Cast a vote using the option UUID from the detail response.
+    $optAUuid = $optA->uuid();
     $this->drupalGet('/api/v1/questions/' . $question->uuid() . '/vote', [
       'method' => 'POST',
-      'body' => json_encode(['option_id' => (int) $optA->id()]),
+      'body' => json_encode(['option_uuid' => $optAUuid]),
       'headers' => [
         'Content-Type' => 'application/json',
         'Authorization' => 'Bearer ' . $token,
@@ -90,11 +91,16 @@ class VotingFullFlowTest extends BrowserTestBase {
     ]);
     $this->assertSession()->statusCodeEquals(201);
 
-    // 6. Admin retrieves results.
+    // 6. Admin obtains token via the auth endpoint, then retrieves results.
     $admin = $this->drupalCreateUser(['administer voting']);
-    /** @var \Drupal\vs_core\Service\AuthTokenService $tokenService */
-    $tokenService = $this->container->get('vs_core.auth_token');
-    $adminToken = $tokenService->issue((int) $admin->id());
+    $adminBody = json_encode(['username' => $admin->getAccountName(), 'password' => $admin->passRaw]);
+    $this->drupalGet('/api/v1/auth/token', [
+      'method' => 'POST',
+      'body' => $adminBody,
+      'headers' => ['Content-Type' => 'application/json'],
+    ]);
+    $this->assertSession()->statusCodeEquals(200);
+    $adminToken = json_decode($this->getSession()->getPage()->getContent(), TRUE)['token'];
 
     $this->drupalGet('/api/v1/admin/questions/' . $question->uuid() . '/results', [
       'headers' => ['Authorization' => 'Bearer ' . $adminToken],
@@ -105,10 +111,10 @@ class VotingFullFlowTest extends BrowserTestBase {
     $this->assertSame($question->uuid(), $results['question_uuid']);
     $this->assertNotEmpty($results['results']);
 
-    // Verify the vote was counted for option A.
+    // Match by UUID — integer ids must not appear in the API response.
     $counted = array_filter(
       $results['results'],
-      static fn($row) => (int) $row['option_id'] === (int) $optA->id()
+      static fn($row) => $row['option_uuid'] === $optAUuid
     );
     $this->assertNotEmpty($counted);
     $this->assertSame(1, (int) array_values($counted)[0]['total']);

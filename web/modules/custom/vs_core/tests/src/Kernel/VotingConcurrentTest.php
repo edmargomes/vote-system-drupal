@@ -53,7 +53,7 @@ class VotingConcurrentTest extends KernelTestBase {
 
     $votingService->castVote(
       questionUuid: $question->uuid(),
-      optionId: (int) $option->id(),
+      optionUuid: $option->uuid(),
       uid: 1,
     );
 
@@ -61,7 +61,7 @@ class VotingConcurrentTest extends KernelTestBase {
 
     $votingService->castVote(
       questionUuid: $question->uuid(),
-      optionId: (int) $option->id(),
+      optionUuid: $option->uuid(),
       uid: 1,
     );
   }
@@ -86,8 +86,8 @@ class VotingConcurrentTest extends KernelTestBase {
     /** @var \Drupal\vs_core\Service\VotingService $votingService */
     $votingService = $this->container->get('vs_core.voting');
 
-    $votingService->castVote(questionUuid: $question->uuid(), optionId: (int) $option->id(), uid: 1);
-    $votingService->castVote(questionUuid: $question->uuid(), optionId: (int) $option->id(), uid: 2);
+    $votingService->castVote(questionUuid: $question->uuid(), optionUuid: $option->uuid(), uid: 1);
+    $votingService->castVote(questionUuid: $question->uuid(), optionUuid: $option->uuid(), uid: 2);
 
     $voteStorage = $this->container->get('entity_type.manager')->getStorage('voting_vote');
     $votes = $voteStorage->loadByProperties(['question_id' => $question->id()]);

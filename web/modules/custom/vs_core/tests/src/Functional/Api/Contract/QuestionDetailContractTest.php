@@ -73,9 +73,9 @@ class QuestionDetailContractTest extends BrowserTestBase {
   }
 
   /**
-   * Response shape includes option id and label fields.
+   * Response shape includes option uuid and label, never an integer id.
    */
-  public function testOptionShapeHasIdAndLabel(): void {
+  public function testOptionShapeHasUuidAndLabel(): void {
     $user = $this->drupalCreateUser(['vote']);
 
     /** @var \Drupal\vs_core\Service\AuthTokenService $tokenService */
@@ -95,8 +95,17 @@ class QuestionDetailContractTest extends BrowserTestBase {
 
     $body = json_decode($this->getSession()->getPage()->getContent(), TRUE);
     $option = $body['options'][0];
-    $this->assertArrayHasKey('id', $option);
+    $this->assertArrayHasKey('uuid', $option);
     $this->assertArrayHasKey('label', $option);
+    $this->assertArrayNotHasKey('id', $option);
+  }
+
+  /**
+   * Unauthenticated request returns 401.
+   */
+  public function testUnauthenticatedRequestReturns401(): void {
+    $this->drupalGet('/api/v1/questions/00000000-0000-0000-0000-000000000001');
+    $this->assertSession()->statusCodeEquals(401);
   }
 
 }
