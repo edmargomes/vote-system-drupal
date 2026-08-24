@@ -29,9 +29,21 @@ $databases['default']['default'] = [
 // ---------------------------------------------------------------------------
 $settings['hash_salt'] = getenv('DRUPAL_HASH_SALT') ?: 'temporary-insecure-salt-change-me';
 
-$settings['trusted_host_patterns'] = [
-  '^' . preg_quote(getenv('SITE_URL') ?: 'localhost') . '$',
-];
+// SITE_URL accepts one or more comma-separated hostnames.
+// Falls back to patterns that cover Lando and localhost for local dev.
+$site_url = getenv('SITE_URL');
+if ($site_url) {
+  $settings['trusted_host_patterns'] = array_map(
+    fn($host) => '^' . preg_quote(trim($host)) . '$',
+    explode(',', $site_url)
+  );
+}
+else {
+  $settings['trusted_host_patterns'] = [
+    '^localhost$',
+    '^.+\.lndo\.site$',
+  ];
+}
 
 // ---------------------------------------------------------------------------
 // File paths
