@@ -1,0 +1,8 @@
+administer voting:
+  title: 'Administer voting system'
+  description: 'Manage questions, options, tokens and global settings.'
+  restrict access: true
+
+vote:
+  title: 'Cast a vote'
+  description: 'Submit a vote via the CMS interface.'

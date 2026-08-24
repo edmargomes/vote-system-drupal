@@ -1,0 +1,56 @@
+# API — Authentication
+vs_core.api.auth_token:
+  path: '/api/v1/auth/token'
+  defaults:
+    _controller: '\Drupal\vs_core\Controller\Api\AuthController::token'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: true
+
+# API — Questions
+vs_core.api.questions_list:
+  path: '/api/v1/questions'
+  defaults:
+    _controller: '\Drupal\vs_core\Controller\Api\QuestionApiController::list'
+  methods: [GET]
+  requirements:
+    _custom_access: '\Drupal\vs_core\Controller\Api\QuestionApiController::access'
+
+vs_core.api.question_detail:
+  path: '/api/v1/questions/{uuid}'
+  defaults:
+    _controller: '\Drupal\vs_core\Controller\Api\QuestionApiController::detail'
+  methods: [GET]
+  requirements:
+    _custom_access: '\Drupal\vs_core\Controller\Api\QuestionApiController::access'
+
+# API — Vote
+vs_core.api.vote:
+  path: '/api/v1/questions/{uuid}/vote'
+  defaults:
+    _controller: '\Drupal\vs_core\Controller\Api\VoteApiController::vote'
+  methods: [POST]
+  requirements:
+    _custom_access: '\Drupal\vs_core\Controller\Api\VoteApiController::access'
+  options:
+    no_cache: true
+
+# API — Admin results
+vs_core.api.admin_results:
+  path: '/api/v1/admin/questions/{uuid}/results'
+  defaults:
+    _controller: '\Drupal\vs_core\Controller\Api\AdminResultsController::results'
+  methods: [GET]
+  requirements:
+    _custom_access: '\Drupal\vs_core\Controller\Api\AdminResultsController::access'
+
+# Admin — Settings
+vs_core.admin.settings:
+  path: '/admin/config/content/vs-core'
+  defaults:
+    _form: '\Drupal\vs_core\Form\VotingSettingsForm'
+    _title: 'Voting System Settings'
+  requirements:
+    _permission: 'administer voting'

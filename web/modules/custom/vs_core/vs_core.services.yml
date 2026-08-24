@@ -1,0 +1,27 @@
+services:
+
+  vs_core.logger:
+    class: Drupal\vs_core\Service\VotingLogger
+    arguments: ['@logger.factory']
+
+  vs_core.auth_token:
+    class: Drupal\vs_core\Service\AuthTokenService
+    arguments: ['@database', '@datetime.time', '@logger.factory']
+
+  vs_core.voting:
+    class: Drupal\vs_core\Service\VotingService
+    arguments: ['@entity_type.manager', '@database', '@config.factory', '@vs_core.logger']
+
+  vs_core.question:
+    class: Drupal\vs_core\Service\QuestionService
+    arguments: ['@entity_type.manager']
+
+  vs_core.result:
+    class: Drupal\vs_core\Service\ResultService
+    arguments: ['@database', '@entity_type.manager']
+
+  vs_core.request_subscriber:
+    class: Drupal\vs_core\EventSubscriber\VotingRequestSubscriber
+    arguments: ['@vs_core.logger']
+    tags:
+      - { name: event_subscriber }

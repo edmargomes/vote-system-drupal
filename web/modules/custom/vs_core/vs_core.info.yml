@@ -1,0 +1,5 @@
+name: 'VS Core'
+type: module
+description: 'Voting system core — REST API with token authentication, custom entities and vote deduplication.'
+package: Custom
+core_version_requirement: ^11

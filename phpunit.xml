@@ -6,16 +6,16 @@
 
   <testsuites>
     <testsuite name="Unit">
-      <directory>web/modules/custom/voting_system/tests/src/Unit</directory>
+      <directory>web/modules/custom/vs_core/tests/src/Unit</directory>
     </testsuite>
     <testsuite name="Kernel">
-      <directory>web/modules/custom/voting_system/tests/src/Kernel</directory>
+      <directory>web/modules/custom/vs_core/tests/src/Kernel</directory>
     </testsuite>
     <testsuite name="Contract">
-      <directory>web/modules/custom/voting_system/tests/src/Functional/Api/Contract</directory>
+      <directory>web/modules/custom/vs_core/tests/src/Functional/Api/Contract</directory>
     </testsuite>
     <testsuite name="Integration">
-      <directory>web/modules/custom/voting_system/tests/src/Functional/Api/Integration</directory>
+      <directory>web/modules/custom/vs_core/tests/src/Functional/Api/Integration</directory>
     </testsuite>
   </testsuites>
 
@@ -23,7 +23,7 @@
   <coverage>
     <include>
       <directory suffix=".php">
-        web/modules/custom/voting_system/src
+        web/modules/custom/vs_core/src
       </directory>
     </include>
 

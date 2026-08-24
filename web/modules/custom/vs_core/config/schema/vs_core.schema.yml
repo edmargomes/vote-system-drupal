@@ -1,0 +1,7 @@
+vs_core.settings:
+  type: config_object
+  label: 'VS Core settings'
+  mapping:
+    voting_enabled:
+      type: boolean
+      label: 'Voting enabled'

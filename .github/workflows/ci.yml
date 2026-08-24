@@ -1,0 +1,169 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 1 — Code quality (no Drupal bootstrap needed)
+  # ──────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, intl, pdo_mysql, gd, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: phpcs — Drupal coding standards
+        run: ./vendor/bin/phpcs --standard=phpcs.xml.dist
+
+      - name: phpstan — static analysis (level 5)
+        run: ./vendor/bin/phpstan analyse --configuration=phpstan.neon --no-progress
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 2 — Unit tests (fast, no database)
+  # ──────────────────────────────────────────────────────────────────────────
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, intl, pdo_mysql, gd, zip
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: PHPUnit — Unit suite
+        run: ./vendor/bin/phpunit --testsuite=Unit --coverage-text
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 3 — Kernel + Contract + Integration (needs MySQL + Drupal installed)
+  # ──────────────────────────────────────────────────────────────────────────
+  drupal:
+    name: Kernel + Contract + Integration Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: drupal11
+          MYSQL_DATABASE: drupal11
+          MYSQL_USER: drupal11
+          MYSQL_PASSWORD: drupal11
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -u drupal11 --password=drupal11 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    # Override the Lando-specific values from phpunit.xml
+    env:
+      SIMPLETEST_DB: mysql://drupal11:drupal11@127.0.0.1:3306/drupal11
+      SIMPLETEST_BASE_URL: http://127.0.0.1:8080
+      BROWSERTEST_OUTPUT_DIRECTORY: /tmp/browsertest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, intl, pdo_mysql, gd, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      # settings.php loads .env via phpdotenv — needs the file to exist before
+      # any Drupal bootstrap (drush or phpunit functional tests).
+      - name: Create .env for CI
+        run: |
+          cat > .env <<'EOF'
+          DB_DRIVER=mysql
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_NAME=drupal11
+          DB_USER=drupal11
+          DB_PASSWORD=drupal11
+          DRUPAL_HASH_SALT=ci-only-not-a-real-secret-replace-this-in-production
+          SITE_URL=127.0.0.1
+          EOF
+
+      - name: Install Drupal
+        run: |
+          ./vendor/bin/drush site:install \
+            --db-url="${SIMPLETEST_DB}" \
+            --site-name="Voting System CI" \
+            --account-name=admin \
+            --account-pass=admin \
+            --yes
+
+      - name: Enable vs_core module
+        run: ./vendor/bin/drush pm:enable vs_core --yes
+
+      - name: Start PHP built-in server
+        run: |
+          php -S 127.0.0.1:8080 -t web > /tmp/php-server.log 2>&1 &
+          # Wait until the server is accepting connections
+          timeout 15 bash -c 'until curl -s http://127.0.0.1:8080 > /dev/null; do sleep 1; done'
+
+      - name: PHPUnit — Kernel suite
+        run: ./vendor/bin/phpunit --testsuite=Kernel
+
+      - name: PHPUnit — Contract suite
+        run: ./vendor/bin/phpunit --testsuite=Contract
+
+      - name: PHPUnit — Integration suite
+        run: ./vendor/bin/phpunit --testsuite=Integration
+
+      - name: Upload server log on failure
+        if: failure()
+        run: cat /tmp/php-server.log || true
