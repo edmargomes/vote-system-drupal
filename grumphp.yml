@@ -18,9 +18,9 @@ grumphp:
       metadata:
         priority: 20
 
-    # 3. Unit tests only — fast, no Drupal bootstrap required
-    phpunit:
-      config_file: phpunit.xml
-      testsuite: Unit
-      metadata:
-        priority: 30
+    # phpunit is enabled once the module test suite exists
+    # phpunit:
+    #   config_file: phpunit.xml
+    #   testsuite: Unit
+    #   metadata:
+    #     priority: 30

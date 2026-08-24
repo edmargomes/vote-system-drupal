@@ -36,6 +36,9 @@
         "drupal-scaffold": {
             "locations": {
                 "web-root": "web/"
+            },
+            "file-mapping": {
+                "[web-root]/sites/default/settings.php": false
             }
         },
         "installer-paths": {
@@ -50,14 +53,6 @@
         "grumphp": {
             "config-default-path": "grumphp.yml"
         }
-    },
-    "scripts": {
-        "post-install-cmd": [
-            "./vendor/bin/phpcs --config-set installed_paths vendor/drupal/coder/coder_sniffer"
-        ],
-        "post-update-cmd": [
-            "./vendor/bin/phpcs --config-set installed_paths vendor/drupal/coder/coder_sniffer"
-        ]
     },
     "minimum-stability": "dev",
     "prefer-stable": true

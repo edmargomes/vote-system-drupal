@@ -9,12 +9,10 @@
 /web/libraries
 
 # Drupal scaffold files (regenerated on composer install)
-/web/sites/default/settings.php
 /web/sites/default/settings.local.php
 /web/sites/default/files/
 
-# Sensitive config
-/web/sites/*/settings*.php
+# Environment — secrets never versioned, use .env.example as template
 /.env
 
 # Coverage reports — generated locally
@@ -22,6 +20,9 @@
 
 # GrumPHP cache
 .grumphp.yml.cache
+
+# GitHub wiki (separate git repo)
+/wiki/
 
 # OS / editor
 .DS_Store
