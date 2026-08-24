@@ -17,7 +17,7 @@ class VotingGlobalDisabledTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['vs_core'];
+  protected static $modules = ['vs_core', 'basic_auth'];
 
   /**
    * {@inheritdoc}
@@ -25,17 +25,13 @@ class VotingGlobalDisabledTest extends BrowserTestBase {
   protected $defaultTheme = 'stark';
 
   /**
-   * When voting_enabled is FALSE, POST /vote returns 503.
+   * When voting_enabled is FALSE, POST /vote returns 403.
    */
-  public function testVoteReturnedServiceUnavailableWhenDisabled(): void {
-    // Disable voting globally.
+  public function testVoteReturnsForbiddenWhenDisabled(): void {
     $this->config('vs_core.settings')->set('voting_enabled', FALSE)->save();
 
     $user = $this->drupalCreateUser(['vote']);
-
-    /** @var \Drupal\vs_core\Service\AuthTokenService $tokenService */
-    $tokenService = $this->container->get('vs_core.auth_token');
-    $token = $tokenService->issue((int) $user->id());
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
 
     $questionStorage = $this->container->get('entity_type.manager')->getStorage('voting_question');
     $question = $questionStorage->create(['title' => 'Disabled test?', 'status' => TRUE]);
@@ -50,24 +46,21 @@ class VotingGlobalDisabledTest extends BrowserTestBase {
       'body' => json_encode(['option_uuid' => $option->uuid()]),
       'headers' => [
         'Content-Type' => 'application/json',
-        'Authorization' => 'Bearer ' . $token,
+        'Authorization' => $authHeader,
       ],
     ]);
 
-    $this->assertSession()->statusCodeEquals(503);
+    $this->assertSession()->statusCodeEquals(403);
   }
 
   /**
-   * When voting_enabled is TRUE the same request succeeds with 201.
+   * When voting_enabled is TRUE, the same request succeeds with 200.
    */
   public function testVoteSucceedsWhenEnabled(): void {
     $this->config('vs_core.settings')->set('voting_enabled', TRUE)->save();
 
     $user = $this->drupalCreateUser(['vote']);
-
-    /** @var \Drupal\vs_core\Service\AuthTokenService $tokenService */
-    $tokenService = $this->container->get('vs_core.auth_token');
-    $token = $tokenService->issue((int) $user->id());
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
 
     $questionStorage = $this->container->get('entity_type.manager')->getStorage('voting_question');
     $question = $questionStorage->create(['title' => 'Enabled test?', 'status' => TRUE]);
@@ -82,30 +75,27 @@ class VotingGlobalDisabledTest extends BrowserTestBase {
       'body' => json_encode(['option_uuid' => $option->uuid()]),
       'headers' => [
         'Content-Type' => 'application/json',
-        'Authorization' => 'Bearer ' . $token,
+        'Authorization' => $authHeader,
       ],
     ]);
 
-    $this->assertSession()->statusCodeEquals(201);
+    $this->assertSession()->statusCodeEquals(200);
   }
 
   /**
-   * Question list endpoint still works regardless of voting_enabled flag.
+   * Question list endpoint also returns 403 when voting_enabled is FALSE.
    */
-  public function testQuestionListIsUnaffectedByVotingDisabled(): void {
+  public function testQuestionListReturnsForbiddenWhenVotingDisabled(): void {
     $this->config('vs_core.settings')->set('voting_enabled', FALSE)->save();
 
     $user = $this->drupalCreateUser(['vote']);
-
-    /** @var \Drupal\vs_core\Service\AuthTokenService $tokenService */
-    $tokenService = $this->container->get('vs_core.auth_token');
-    $token = $tokenService->issue((int) $user->id());
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
 
     $this->drupalGet('/api/v1/questions', [
-      'headers' => ['Authorization' => 'Bearer ' . $token],
+      'headers' => ['Authorization' => $authHeader],
     ]);
 
-    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->statusCodeEquals(403);
   }
 
 }

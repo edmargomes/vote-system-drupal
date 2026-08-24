@@ -4,10 +4,6 @@ services:
     class: Drupal\vs_core\Service\VotingLogger
     arguments: ['@logger.factory']
 
-  vs_core.auth_token:
-    class: Drupal\vs_core\Service\AuthTokenService
-    arguments: ['@database', '@datetime.time', '@logger.factory']
-
   vs_core.voting:
     class: Drupal\vs_core\Service\VotingService
     arguments: ['@entity_type.manager', '@database', '@config.factory', '@vs_core.logger']

@@ -26,7 +26,6 @@ class VotingEntityTest extends KernelTestBase {
     $this->installEntitySchema('voting_question');
     $this->installEntitySchema('voting_option');
     $this->installEntitySchema('voting_vote');
-    $this->installSchema('vs_core', ['vs_core_api_token']);
     $this->installConfig(['vs_core']);
   }
 

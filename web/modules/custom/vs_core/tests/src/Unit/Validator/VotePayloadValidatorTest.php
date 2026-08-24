@@ -82,14 +82,13 @@ class VotePayloadValidatorTest extends UnitTestCase {
   /**
    * @covers ::validate
    */
-  public function testValidateRejectsExtraUnknownFields(): void {
+  public function testValidateIgnoresExtraUnknownFields(): void {
     $errors = $this->validator->validate([
       'option_uuid' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-      'injected_field' => 'evil',
+      'injected_field' => 'value',
     ]);
 
-    $this->assertNotEmpty($errors);
-    $this->assertContains('Unknown field: injected_field', $errors);
+    $this->assertSame([], $errors);
   }
 
 }

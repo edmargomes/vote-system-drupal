@@ -17,7 +17,7 @@ class QuestionListContractTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['vs_core'];
+  protected static $modules = ['vs_core', 'basic_auth'];
 
   /**
    * {@inheritdoc}
@@ -25,7 +25,7 @@ class QuestionListContractTest extends BrowserTestBase {
   protected $defaultTheme = 'stark';
 
   /**
-   * GET /api/v1/questions without a token returns 401.
+   * GET /api/v1/questions without credentials returns 401.
    */
   public function testUnauthenticatedRequestReturns401(): void {
     $this->drupalGet('/api/v1/questions');
@@ -33,23 +33,22 @@ class QuestionListContractTest extends BrowserTestBase {
   }
 
   /**
-   * GET /api/v1/questions with a valid token returns 200 and a JSON array.
+   * Authenticated request returns 200 with structured body.
    */
-  public function testAuthenticatedRequestReturns200WithArray(): void {
+  public function testAuthenticatedRequestReturns200WithStructuredResponse(): void {
     $user = $this->drupalCreateUser(['vote']);
-
-    /** @var \Drupal\vs_core\Service\AuthTokenService $tokenService */
-    $tokenService = $this->container->get('vs_core.auth_token');
-    $token = $tokenService->issue((int) $user->id());
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
 
     $this->drupalGet('/api/v1/questions', [
-      'headers' => ['Authorization' => 'Bearer ' . $token],
+      'headers' => ['Authorization' => $authHeader],
     ]);
 
     $this->assertSession()->statusCodeEquals(200);
 
     $body = json_decode($this->getSession()->getPage()->getContent(), TRUE);
-    $this->assertIsArray($body);
+    $this->assertArrayHasKey('data', $body);
+    $this->assertArrayHasKey('meta', $body);
+    $this->assertIsArray($body['data']);
   }
 
   /**
@@ -57,26 +56,43 @@ class QuestionListContractTest extends BrowserTestBase {
    */
   public function testQuestionListItemsHaveRequiredFields(): void {
     $user = $this->drupalCreateUser(['vote']);
-
-    /** @var \Drupal\vs_core\Service\AuthTokenService $tokenService */
-    $tokenService = $this->container->get('vs_core.auth_token');
-    $token = $tokenService->issue((int) $user->id());
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
 
     // Create a question so the list is non-empty.
     $storage = $this->container->get('entity_type.manager')->getStorage('voting_question');
     $storage->create(['title' => 'Contract question', 'status' => TRUE])->save();
 
     $this->drupalGet('/api/v1/questions', [
-      'headers' => ['Authorization' => 'Bearer ' . $token],
+      'headers' => ['Authorization' => $authHeader],
     ]);
 
     $body = json_decode($this->getSession()->getPage()->getContent(), TRUE);
-    $this->assertNotEmpty($body);
+    $this->assertNotEmpty($body['data']);
 
-    $first = $body[0];
+    $first = $body['data'][0];
     $this->assertArrayHasKey('uuid', $first);
     $this->assertArrayHasKey('title', $first);
-    $this->assertArrayHasKey('show_results', $first);
+    $this->assertArrayHasKey('options_count', $first);
+    $this->assertArrayNotHasKey('id', $first);
+  }
+
+  /**
+   * Meta.total reflects the number of active questions.
+   */
+  public function testMetaTotalMatchesQuestionCount(): void {
+    $user = $this->drupalCreateUser(['vote']);
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
+
+    $storage = $this->container->get('entity_type.manager')->getStorage('voting_question');
+    $storage->create(['title' => 'Question one', 'status' => TRUE])->save();
+    $storage->create(['title' => 'Question two', 'status' => TRUE])->save();
+
+    $this->drupalGet('/api/v1/questions', [
+      'headers' => ['Authorization' => $authHeader],
+    ]);
+
+    $body = json_decode($this->getSession()->getPage()->getContent(), TRUE);
+    $this->assertSame(2, $body['meta']['total']);
   }
 
 }

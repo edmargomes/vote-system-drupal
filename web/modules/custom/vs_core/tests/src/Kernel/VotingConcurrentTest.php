@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\vs_core\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\user\Entity\User;
 use Drupal\vs_core\Exception\DuplicateVoteException;
 
 /**
@@ -24,10 +25,10 @@ class VotingConcurrentTest extends KernelTestBase {
    */
   protected function setUp(): void {
     parent::setUp();
+    $this->installEntitySchema('user');
     $this->installEntitySchema('voting_question');
     $this->installEntitySchema('voting_option');
     $this->installEntitySchema('voting_vote');
-    $this->installSchema('vs_core', ['vs_core_api_token']);
     $this->installConfig(['vs_core']);
   }
 
@@ -48,22 +49,17 @@ class VotingConcurrentTest extends KernelTestBase {
     ]);
     $option->save();
 
+    $user = User::create(['name' => 'voter1', 'status' => 1]);
+    $user->save();
+
     /** @var \Drupal\vs_core\Service\VotingService $votingService */
     $votingService = $this->container->get('vs_core.voting');
 
-    $votingService->castVote(
-      questionUuid: $question->uuid(),
-      optionUuid: $option->uuid(),
-      uid: 1,
-    );
+    $votingService->registerVote($user, $question, $option);
 
     $this->expectException(DuplicateVoteException::class);
 
-    $votingService->castVote(
-      questionUuid: $question->uuid(),
-      optionUuid: $option->uuid(),
-      uid: 1,
-    );
+    $votingService->registerVote($user, $question, $option);
   }
 
   /**
@@ -83,11 +79,17 @@ class VotingConcurrentTest extends KernelTestBase {
     ]);
     $option->save();
 
+    $user1 = User::create(['name' => 'voter1', 'status' => 1]);
+    $user1->save();
+
+    $user2 = User::create(['name' => 'voter2', 'status' => 1]);
+    $user2->save();
+
     /** @var \Drupal\vs_core\Service\VotingService $votingService */
     $votingService = $this->container->get('vs_core.voting');
 
-    $votingService->castVote(questionUuid: $question->uuid(), optionUuid: $option->uuid(), uid: 1);
-    $votingService->castVote(questionUuid: $question->uuid(), optionUuid: $option->uuid(), uid: 2);
+    $votingService->registerVote($user1, $question, $option);
+    $votingService->registerVote($user2, $question, $option);
 
     $voteStorage = $this->container->get('entity_type.manager')->getStorage('voting_vote');
     $votes = $voteStorage->loadByProperties(['question_id' => $question->id()]);

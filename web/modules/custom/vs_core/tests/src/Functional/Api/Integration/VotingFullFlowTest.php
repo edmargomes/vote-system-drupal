@@ -19,7 +19,7 @@ class VotingFullFlowTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['vs_core'];
+  protected static $modules = ['vs_core', 'basic_auth'];
 
   /**
    * {@inheritdoc}
@@ -27,7 +27,7 @@ class VotingFullFlowTest extends BrowserTestBase {
   protected $defaultTheme = 'stark';
 
   /**
-   * Full happy-path flow from token issuance to result retrieval.
+   * Full happy-path flow from Basic Auth to result retrieval.
    */
   public function testFullVotingFlow(): void {
     // 1. Create a question with options.
@@ -45,39 +45,29 @@ class VotingFullFlowTest extends BrowserTestBase {
     $optB = $optionStorage->create(['label' => 'Python', 'question_id' => $question->id()]);
     $optB->save();
 
-    // 2. Obtain a token via the auth endpoint.
+    // 2. Create a user and build Basic Auth header.
     $user = $this->drupalCreateUser(['vote']);
-    $body = json_encode(['username' => $user->getAccountName(), 'password' => $user->passRaw]);
-
-    $this->drupalGet('/api/v1/auth/token', [
-      'method' => 'POST',
-      'body' => $body,
-      'headers' => ['Content-Type' => 'application/json'],
-    ]);
-    $this->assertSession()->statusCodeEquals(200);
-
-    $authResponse = json_decode($this->getSession()->getPage()->getContent(), TRUE);
-    $this->assertArrayHasKey('token', $authResponse);
-    $token = $authResponse['token'];
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
 
     // 3. List questions.
     $this->drupalGet('/api/v1/questions', [
-      'headers' => ['Authorization' => 'Bearer ' . $token],
+      'headers' => ['Authorization' => $authHeader],
     ]);
     $this->assertSession()->statusCodeEquals(200);
 
     $list = json_decode($this->getSession()->getPage()->getContent(), TRUE);
-    $this->assertNotEmpty($list);
+    $this->assertArrayHasKey('data', $list);
+    $this->assertNotEmpty($list['data']);
 
     // 4. View question detail.
     $this->drupalGet('/api/v1/questions/' . $question->uuid(), [
-      'headers' => ['Authorization' => 'Bearer ' . $token],
+      'headers' => ['Authorization' => $authHeader],
     ]);
     $this->assertSession()->statusCodeEquals(200);
 
     $detail = json_decode($this->getSession()->getPage()->getContent(), TRUE);
-    $this->assertSame($question->uuid(), $detail['uuid']);
-    $this->assertCount(2, $detail['options']);
+    $this->assertSame($question->uuid(), $detail['data']['uuid']);
+    $this->assertCount(2, $detail['data']['options']);
 
     // 5. Cast a vote using the option UUID from the detail response.
     $optAUuid = $optA->uuid();
@@ -86,29 +76,27 @@ class VotingFullFlowTest extends BrowserTestBase {
       'body' => json_encode(['option_uuid' => $optAUuid]),
       'headers' => [
         'Content-Type' => 'application/json',
-        'Authorization' => 'Bearer ' . $token,
+        'Authorization' => $authHeader,
       ],
     ]);
-    $this->assertSession()->statusCodeEquals(201);
-
-    // 6. Admin obtains token via the auth endpoint, then retrieves results.
-    $admin = $this->drupalCreateUser(['administer voting']);
-    $adminBody = json_encode(['username' => $admin->getAccountName(), 'password' => $admin->passRaw]);
-    $this->drupalGet('/api/v1/auth/token', [
-      'method' => 'POST',
-      'body' => $adminBody,
-      'headers' => ['Content-Type' => 'application/json'],
-    ]);
     $this->assertSession()->statusCodeEquals(200);
-    $adminToken = json_decode($this->getSession()->getPage()->getContent(), TRUE)['token'];
+
+    $voteResponse = json_decode($this->getSession()->getPage()->getContent(), TRUE);
+    $this->assertSame('success', $voteResponse['status']);
+    // show_results is TRUE so results must be present in the vote response.
+    $this->assertArrayHasKey('results', $voteResponse);
+
+    // 6. Admin retrieves results via Basic Auth.
+    $admin = $this->drupalCreateUser(['administer voting']);
+    $adminAuth = 'Basic ' . base64_encode($admin->getAccountName() . ':' . $admin->passRaw);
 
     $this->drupalGet('/api/v1/admin/questions/' . $question->uuid() . '/results', [
-      'headers' => ['Authorization' => 'Bearer ' . $adminToken],
+      'headers' => ['Authorization' => $adminAuth],
     ]);
     $this->assertSession()->statusCodeEquals(200);
 
     $results = json_decode($this->getSession()->getPage()->getContent(), TRUE);
-    $this->assertSame($question->uuid(), $results['question_uuid']);
+    $this->assertSame($question->uuid(), $results['question']['uuid']);
     $this->assertNotEmpty($results['results']);
 
     // Match by UUID — integer ids must not appear in the API response.
@@ -117,7 +105,7 @@ class VotingFullFlowTest extends BrowserTestBase {
       static fn($row) => $row['option_uuid'] === $optAUuid
     );
     $this->assertNotEmpty($counted);
-    $this->assertSame(1, (int) array_values($counted)[0]['total']);
+    $this->assertSame(1, (int) array_values($counted)[0]['votes']);
   }
 
 }

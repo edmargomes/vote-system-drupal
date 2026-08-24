@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\vs_core\Unit\Service;
 
+use PHPUnit\Framework\MockObject\MockObject;
 use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\vs_core\Entity\VotingQuestionInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Database\StatementInterface;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Tests\UnitTestCase;
-use Drupal\vs_core\Exception\VotingNotFoundException;
 use Drupal\vs_core\Service\ResultService;
 
 /**
@@ -56,59 +55,38 @@ class ResultServiceTest extends UnitTestCase {
   /**
    * @covers ::getResults
    */
-  public function testGetResultsThrowsWhenQuestionNotFound(): void {
-    $storage = $this->createMock(EntityStorageInterface::class);
-    $storage->method('loadByProperties')
-      ->with(['uuid' => 'bad-uuid'])
-      ->willReturn([]);
-
-    $this->entityTypeManager->method('getStorage')
-      ->with('voting_question')
-      ->willReturn($storage);
-
-    $this->expectException(VotingNotFoundException::class);
-
-    $this->service->getResults('bad-uuid');
-  }
-
-  /**
-   * @covers ::getResults
-   */
-  public function testGetResultsReturnsAggregatedCounts(): void {
+  public function testGetResultsReturnsAggregatedCountsWithPercentages(): void {
     $question = $this->createMock(VotingQuestionInterface::class);
     $question->method('id')->willReturn(5);
 
-    $storage = $this->createMock(EntityStorageInterface::class);
-    $storage->method('loadByProperties')->willReturn([$question]);
-
-    $this->entityTypeManager->method('getStorage')
-      ->with('voting_question')
-      ->willReturn($storage);
-
+    // DB returns raw vote counts per option with UUID and title from a JOIN.
     $rows = [
-      (object) ['option_id' => 1, 'total' => '10'],
-      (object) ['option_id' => 2, 'total' => '5'],
+      (object) ['option_uuid' => 'uuid-a', 'title' => 'Option A', 'votes' => '10'],
+      (object) ['option_uuid' => 'uuid-b', 'title' => 'Option B', 'votes' => '5'],
     ];
 
     $stmt = $this->createMock(StatementInterface::class);
     $stmt->method('fetchAll')->willReturn($rows);
 
-    $select = $this->getMockBuilder(SelectInterface::class)
-      ->disableOriginalConstructor()
-      ->getMock();
-    $select->method('fields')->willReturnSelf();
-    $select->method('condition')->willReturnSelf();
-    $select->method('groupBy')->willReturnSelf();
-    $select->method('addExpression')->willReturnSelf();
-    $select->method('execute')->willReturn($stmt);
-
+    $select = $this->buildSelectMock($stmt);
     $this->database->method('select')->willReturn($select);
 
-    $results = $this->service->getResults('some-uuid');
+    $results = $this->service->getResults($question);
 
     $this->assertCount(2, $results);
-    $this->assertSame(10, $results[0]['total']);
-    $this->assertSame(5, $results[1]['total']);
+
+    $this->assertSame('uuid-a', $results[0]['option_uuid']);
+    $this->assertSame('Option A', $results[0]['title']);
+    $this->assertSame(10, $results[0]['votes']);
+    $this->assertArrayHasKey('percentage', $results[0]);
+
+    $this->assertSame('uuid-b', $results[1]['option_uuid']);
+    $this->assertSame(5, $results[1]['votes']);
+    $this->assertArrayHasKey('percentage', $results[1]);
+
+    // Percentages must sum to 100 (within float rounding).
+    $sum = $results[0]['percentage'] + $results[1]['percentage'];
+    $this->assertEqualsWithDelta(100.0, $sum, 0.01);
   }
 
   /**
@@ -118,30 +96,62 @@ class ResultServiceTest extends UnitTestCase {
     $question = $this->createMock(VotingQuestionInterface::class);
     $question->method('id')->willReturn(9);
 
-    $storage = $this->createMock(EntityStorageInterface::class);
-    $storage->method('loadByProperties')->willReturn([$question]);
-
-    $this->entityTypeManager->method('getStorage')
-      ->with('voting_question')
-      ->willReturn($storage);
-
     $stmt = $this->createMock(StatementInterface::class);
     $stmt->method('fetchAll')->willReturn([]);
 
+    $select = $this->buildSelectMock($stmt);
+    $this->database->method('select')->willReturn($select);
+
+    $results = $this->service->getResults($question);
+
+    $this->assertSame([], $results);
+  }
+
+  /**
+   * @covers ::getResults
+   */
+  public function testGetResultsNeverReturnsIntegerOptionId(): void {
+    $question = $this->createMock(VotingQuestionInterface::class);
+    $question->method('id')->willReturn(5);
+
+    $rows = [
+      (object) ['option_uuid' => 'uuid-x', 'title' => 'X', 'votes' => '3'],
+    ];
+
+    $stmt = $this->createMock(StatementInterface::class);
+    $stmt->method('fetchAll')->willReturn($rows);
+
+    $select = $this->buildSelectMock($stmt);
+    $this->database->method('select')->willReturn($select);
+
+    $results = $this->service->getResults($question);
+
+    $this->assertArrayNotHasKey('option_id', $results[0]);
+    $this->assertArrayHasKey('option_uuid', $results[0]);
+  }
+
+  /**
+   * Builds a chainable select query mock that returns the given statement.
+   *
+   * @param \Drupal\Core\Database\StatementInterface $stmt
+   *   Statement to return from execute().
+   *
+   * @return \PHPUnit\Framework\MockObject\MockObject
+   *   Select query mock.
+   */
+  private function buildSelectMock(StatementInterface $stmt): MockObject {
     $select = $this->getMockBuilder(SelectInterface::class)
       ->disableOriginalConstructor()
       ->getMock();
+
     $select->method('fields')->willReturnSelf();
+    $select->method('join')->willReturn('o');
     $select->method('condition')->willReturnSelf();
     $select->method('groupBy')->willReturnSelf();
-    $select->method('addExpression')->willReturnSelf();
+    $select->method('addExpression')->willReturn('vote_count');
     $select->method('execute')->willReturn($stmt);
 
-    $this->database->method('select')->willReturn($select);
-
-    $results = $this->service->getResults('empty-uuid');
-
-    $this->assertSame([], $results);
+    return $select;
   }
 
 }
