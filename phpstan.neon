@@ -7,6 +7,7 @@ parameters:
 
   excludePaths:
     - web/modules/custom/*/tests
+    - web/modules/custom/*/tests/**
 
   ignoreErrors:
     # Add Drupal ecosystem false-positives here if needed
