@@ -65,12 +65,12 @@ lando phpcbf
 lando phpstan
 ```
 
-GrumPHP runs `phpcs`, `phpstan`, and the Unit test suite automatically on every `git commit`.
+GrumPHP runs `phpcs` and `phpstan` automatically on every `git commit`.
 
-## Coverage Reports
+## Coverage Reports (local only)
 
 ```bash
-# Generate full coverage report
+# Generate full coverage report (HTML + Clover)
 lando coverage
 
 # Unit tests coverage only (faster)
@@ -81,26 +81,19 @@ The HTML report is served at **http://coverage.voting-system.lndo.site**.
 
 ## API Quick Reference
 
-All endpoints (except auth) require `Authorization: Bearer {token}`.
+All endpoints require `Authorization: Basic base64(username:password)`.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/v1/auth/token` | Obtain an access token |
 | `GET`  | `/api/v1/questions` | List active questions |
 | `GET`  | `/api/v1/questions/{uuid}` | Question detail with options |
 | `POST` | `/api/v1/questions/{uuid}/vote` | Cast a vote |
 | `GET`  | `/api/v1/admin/questions/{uuid}/results` | Full results (admin only) |
 
-**Auth request:**
-```json
-POST /api/v1/auth/token
-{ "username": "editor", "password": "secret" }
-```
-
 **Vote request:**
 ```json
 POST /api/v1/questions/{uuid}/vote
-Authorization: Bearer <token>
+Authorization: Basic <base64(username:password)>
 { "option_uuid": "6ba7b810-9dad-11d1-80b4-00c04fd430c8" }
 ```
 
@@ -109,24 +102,29 @@ Duplicate votes return **HTTP 409 Conflict**.
 ## Module Structure
 
 ```
-web/modules/custom/voting_system/
-├── voting_system.info.yml
-├── voting_system.module
-├── voting_system.install
-├── voting_system.routing.yml
-├── voting_system.permissions.yml
-├── voting_system.services.yml
-├── voting_system.links.menu.yml
+web/modules/custom/vs_core/
+├── vs_core.info.yml
+├── vs_core.module
+├── vs_core.install
+├── vs_core.routing.yml
+├── vs_core.permissions.yml
+├── vs_core.services.yml
+├── vs_core.links.menu.yml
 ├── config/
-│   ├── install/voting_system.settings.yml
-│   └── schema/voting_system.schema.yml
-└── src/
-    ├── Entity/          # VotingQuestion, VotingOption, VotingVote
-    ├── Controller/Api/  # AuthController, QuestionApiController, VoteApiController, AdminResultsController
-    ├── Controller/Admin/
-    ├── Service/         # AuthTokenService, VotingService, QuestionService, ResultService, VotingLogger
-    ├── Form/
-    ├── Exception/
-    ├── Validator/
-    └── EventSubscriber/
+│   ├── install/vs_core.settings.yml
+│   └── schema/vs_core.schema.yml
+├── src/
+│   ├── Controller/Api/    # QuestionApiController, VoteApiController, AdminResultsController
+│   ├── Entity/            # VotingQuestion, VotingOption, VotingVote (+ interfaces)
+│   ├── EventSubscriber/   # VotingRequestSubscriber
+│   ├── Exception/         # DuplicateVoteException, VotingDisabledException, VotingNotFoundException
+│   ├── Form/              # VotingSettingsForm
+│   ├── Service/           # VotingService, QuestionService, ResultService, VotingCacheService, VotingLogger
+│   ├── Validator/         # VotePayloadValidator
+└── tests/src/
+    ├── Unit/              # Fast tests — no Drupal bootstrap
+    ├── Kernel/            # Entity persistence and DB constraints
+    └── Functional/Api/
+        ├── Contract/      # HTTP contract tests (status, schema, headers)
+        └── Integration/   # End-to-end flow tests
 ```
