@@ -66,6 +66,13 @@ class VotingQuestionDeleteForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
+  public function getConfirmText(): TranslatableMarkup {
+    return $this->t('Delete');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getCancelUrl(): Url {
     return Url::fromRoute('vs_core.admin.questions_list');
   }

@@ -70,6 +70,13 @@ class VotingOptionDeleteForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
+  public function getConfirmText(): TranslatableMarkup {
+    return $this->t('Delete');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getCancelUrl(): Url {
     return Url::fromRoute('vs_core.admin.question_edit', ['id' => $this->questionId]);
   }

@@ -86,39 +86,13 @@ class VotingBulkDeleteForm extends FormBase {
       return $form;
     }
 
-    $options = [];
-    foreach ($votes as $vote) {
-      /** @var \Drupal\user\UserInterface|null $userEntity */
-      $userEntity = $vote->get('uid')->entity;
-      /** @var \Drupal\Core\Entity\EntityInterface|null $optionEntity */
-      $optionEntity = $vote->get('option_id')->entity;
-
-      $username = $userEntity ? $userEntity->getDisplayName() : (string) $this->t('Unknown');
-      $optionLabel = $optionEntity ? $optionEntity->label() : (string) $this->t('Unknown');
-      $source = $vote->get('source')->value;
-      $created = $this->dateFormatter->format((int) $vote->get('created')->value, 'short');
-
-      $options[$vote->id()] = $this->t('@user — @option (@source) on @date', [
-        '@user' => $username,
-        '@option' => $optionLabel,
-        '@source' => $source,
-        '@date' => $created,
-      ]);
-    }
-
-    $form['votes'] = [
-      '#type' => 'checkboxes',
-      '#title' => $this->t('Votes'),
-      '#options' => $options,
-    ];
-
     $header = [
-      $this->t('Select'),
-      $this->t('User'),
-      $this->t('Option'),
-      $this->t('Source'),
-      $this->t('Created'),
+      'user' => $this->t('User'),
+      'option' => $this->t('Option'),
+      'source' => $this->t('Source'),
+      'created' => $this->t('Created'),
     ];
+
     $rows = [];
     foreach ($votes as $vote) {
       /** @var \Drupal\user\UserInterface|null $userEntity */
@@ -129,28 +103,21 @@ class VotingBulkDeleteForm extends FormBase {
       $username = $userEntity ? $userEntity->getDisplayName() : (string) $this->t('Unknown');
       $optionLabel = $optionEntity ? $optionEntity->label() : (string) $this->t('Unknown');
 
-      $rows[] = [
-        [
-          'data' => [
-            '#type' => 'checkbox',
-            '#name' => 'votes[' . $vote->id() . ']',
-            '#return_value' => $vote->id(),
-          ],
-        ],
-        $username,
-        $optionLabel,
-        $vote->get('source')->value,
-        $this->dateFormatter->format((int) $vote->get('created')->value, 'short'),
+      $rows[$vote->id()] = [
+        'user' => $username,
+        'option' => $optionLabel,
+        'source' => $vote->get('source')->value,
+        'created' => $this->dateFormatter->format((int) $vote->get('created')->value, 'short'),
       ];
     }
 
-    // The checkboxes element drives form submission; the table is for display.
-    $form['votes']['#access'] = FALSE;
-
-    $form['table'] = [
-      '#type' => 'table',
+    // Tableselect renders a checkbox column alongside the data columns and
+    // stores selections in form state under the element's key, keyed by row ID.
+    $form['votes'] = [
+      '#type' => 'tableselect',
       '#header' => $header,
-      '#rows' => $rows,
+      '#options' => $rows,
+      '#empty' => $this->t('No votes found for this question.'),
     ];
 
     $form['actions'] = ['#type' => 'actions'];
