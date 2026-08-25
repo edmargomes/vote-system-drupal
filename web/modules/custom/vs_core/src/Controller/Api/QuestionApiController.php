@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Drupal\vs_core\Controller\Api;
 
+use Drupal\Core\Cache\CacheableJsonResponse;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\file\FileInterface;
 use Drupal\vs_core\Service\QuestionService;
+use Drupal\vs_core\Service\VotingCacheService;
 use Drupal\vs_core\Service\VotingService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -27,11 +29,14 @@ class QuestionApiController extends ControllerBase {
    *   The question service.
    * @param \Drupal\Core\File\FileUrlGeneratorInterface $fileUrlGenerator
    *   The file URL generator.
+   * @param \Drupal\vs_core\Service\VotingCacheService $cacheService
+   *   The cache metadata builder service.
    */
   public function __construct(
     private readonly VotingService $votingService,
     private readonly QuestionService $questionService,
     private readonly FileUrlGeneratorInterface $fileUrlGenerator,
+    private readonly VotingCacheService $cacheService,
   ) {}
 
   /**
@@ -42,6 +47,7 @@ class QuestionApiController extends ControllerBase {
       $container->get('vs_core.voting'),
       $container->get('vs_core.question'),
       $container->get('file_url_generator'),
+      $container->get('vs_core.cache'),
     );
   }
 
@@ -56,7 +62,7 @@ class QuestionApiController extends ControllerBase {
    */
   public function list(Request $request): JsonResponse {
     if (!$this->votingService->isVotingEnabled()) {
-      return $this->jsonResponse(
+      return $this->errorResponse(
         ['error' => 'voting_disabled', 'message' => 'Voting is currently disabled.'],
         403,
       );
@@ -75,10 +81,12 @@ class QuestionApiController extends ControllerBase {
       ];
     }
 
-    return $this->jsonResponse([
+    $response = new CacheableJsonResponse([
       'data' => $data,
       'meta' => ['total' => count($data)],
     ]);
+    $response->addCacheableDependency($this->cacheService->forQuestionList($questions));
+    return $response;
   }
 
   /**
@@ -94,7 +102,7 @@ class QuestionApiController extends ControllerBase {
    */
   public function detail(string $uuid, Request $request): JsonResponse {
     if (!$this->votingService->isVotingEnabled()) {
-      return $this->jsonResponse(
+      return $this->errorResponse(
         ['error' => 'voting_disabled', 'message' => 'Voting is currently disabled.'],
         403,
       );
@@ -103,7 +111,7 @@ class QuestionApiController extends ControllerBase {
     $question = $this->questionService->findByUuid($uuid);
 
     if ($question === NULL) {
-      return $this->jsonResponse(
+      return $this->errorResponse(
         ['error' => 'not_found', 'message' => 'Question not found.'],
         404,
       );
@@ -132,7 +140,7 @@ class QuestionApiController extends ControllerBase {
       ];
     }
 
-    return $this->jsonResponse([
+    $response = new CacheableJsonResponse([
       'data' => [
         'uuid' => $question->uuid(),
         'title' => $question->label(),
@@ -140,10 +148,18 @@ class QuestionApiController extends ControllerBase {
         'options' => $serialisedOptions,
       ],
     ]);
+    $response->addCacheableDependency($this->cacheService->forQuestionDetail($question));
+    return $response;
   }
 
   /**
-   * Builds a JsonResponse with standard security headers.
+   * Builds a plain JsonResponse for error paths (4xx).
+   *
+   * Security headers (X-Content-Type-Options, X-Frame-Options) are applied
+   * unconditionally by VotingRequestSubscriber; Cache-Control is set by the
+   * subscriber for non-GET methods only. Error responses on GET do not need
+   * cache tags and are not stored by compliant proxies without an explicit
+   * directive.
    *
    * @param array<string, mixed> $data
    *   The response payload.
@@ -151,14 +167,10 @@ class QuestionApiController extends ControllerBase {
    *   HTTP status code.
    *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
-   *   The response with security headers applied.
+   *   A plain (non-cacheable) JSON response.
    */
-  private function jsonResponse(array $data, int $status = 200): JsonResponse {
-    $response = new JsonResponse($data, $status);
-    $response->headers->set('Cache-Control', 'no-store');
-    $response->headers->set('X-Content-Type-Options', 'nosniff');
-    $response->headers->set('X-Frame-Options', 'DENY');
-    return $response;
+  private function errorResponse(array $data, int $status): JsonResponse {
+    return new JsonResponse($data, $status);
   }
 
 }

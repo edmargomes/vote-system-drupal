@@ -1,5 +1,8 @@
 services:
 
+  vs_core.cache:
+    class: Drupal\vs_core\Service\VotingCacheService
+
   vs_core.validator:
     class: Drupal\vs_core\Validator\VotePayloadValidator
 

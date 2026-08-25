@@ -103,6 +103,57 @@ class QuestionDetailContractTest extends BrowserTestBase {
   }
 
   /**
+   * GET 200 response does not carry Cache-Control: no-store.
+   */
+  public function testGet200ResponseDoesNotHaveNoStoreDirective(): void {
+    $user = $this->drupalCreateUser(['vote']);
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
+
+    $questionStorage = $this->container->get('entity_type.manager')
+      ->getStorage('voting_question');
+    $question = $questionStorage->create(['title' => 'CC no-store test?', 'status' => TRUE]);
+    $question->save();
+
+    $this->drupalGet(
+      '/api/v1/questions/' . $question->uuid(),
+      [],
+      ['Authorization' => $authHeader],
+    );
+
+    $this->assertSession()->statusCodeEquals(200);
+    $cacheControl = $this->getSession()->getResponseHeader('Cache-Control') ?? '';
+    $this->assertStringNotContainsString('no-store', $cacheControl);
+  }
+
+  /**
+   * GET 200 response Cache-Control allows revalidation.
+   */
+  public function testGet200ResponseCacheControlAllowsRevalidation(): void {
+    $user = $this->drupalCreateUser(['vote']);
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
+
+    $questionStorage = $this->container->get('entity_type.manager')
+      ->getStorage('voting_question');
+    $question = $questionStorage->create(['title' => 'CC revalidate test?', 'status' => TRUE]);
+    $question->save();
+
+    $this->drupalGet(
+      '/api/v1/questions/' . $question->uuid(),
+      [],
+      ['Authorization' => $authHeader],
+    );
+
+    $this->assertSession()->statusCodeEquals(200);
+    $cacheControl = $this->getSession()->getResponseHeader('Cache-Control') ?? '';
+    $hasNoCache = str_contains($cacheControl, 'no-cache');
+    $hasMustRevalidate = str_contains($cacheControl, 'must-revalidate');
+    $this->assertTrue(
+      $hasNoCache || $hasMustRevalidate,
+      "Cache-Control must contain 'no-cache' or 'must-revalidate'; got: $cacheControl"
+    );
+  }
+
+  /**
    * Response shape includes option uuid and title, never an integer id.
    */
   public function testOptionShapeHasUuidAndTitle(): void {

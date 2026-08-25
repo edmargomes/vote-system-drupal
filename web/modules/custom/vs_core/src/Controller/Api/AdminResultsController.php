@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Drupal\vs_core\Controller\Api;
 
+use Drupal\Core\Cache\CacheableJsonResponse;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\vs_core\Service\QuestionService;
 use Drupal\vs_core\Service\ResultService;
+use Drupal\vs_core\Service\VotingCacheService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,10 +28,13 @@ class AdminResultsController extends ControllerBase {
    *   The question service.
    * @param \Drupal\vs_core\Service\ResultService $resultService
    *   The result service.
+   * @param \Drupal\vs_core\Service\VotingCacheService $cacheService
+   *   The cache metadata builder service.
    */
   public function __construct(
     private readonly QuestionService $questionService,
     private readonly ResultService $resultService,
+    private readonly VotingCacheService $cacheService,
   ) {}
 
   /**
@@ -39,6 +44,7 @@ class AdminResultsController extends ControllerBase {
     return new static(
       $container->get('vs_core.question'),
       $container->get('vs_core.result'),
+      $container->get('vs_core.cache'),
     );
   }
 
@@ -57,7 +63,7 @@ class AdminResultsController extends ControllerBase {
     $question = $this->questionService->findByUuid($uuid);
 
     if ($question === NULL) {
-      return $this->jsonResponse(
+      return $this->errorResponse(
         ['error' => 'not_found', 'message' => 'Question not found.'],
         404,
       );
@@ -66,7 +72,7 @@ class AdminResultsController extends ControllerBase {
     $results = $this->resultService->getResults($question);
     $totalVotes = $this->resultService->getTotalVotes($question);
 
-    return $this->jsonResponse([
+    $response = new CacheableJsonResponse([
       'question' => [
         'uuid' => $question->uuid(),
         'title' => $question->label(),
@@ -75,10 +81,16 @@ class AdminResultsController extends ControllerBase {
       ],
       'results' => $results,
     ]);
+    $response->addCacheableDependency($this->cacheService->forAdminResults($question));
+    return $response;
   }
 
   /**
-   * Builds a JsonResponse with standard security headers.
+   * Builds a plain JsonResponse for error paths (4xx).
+   *
+   * Security headers are applied unconditionally by VotingRequestSubscriber.
+   * Error responses do not carry cache tags and are not stored by compliant
+   * proxies without an explicit directive.
    *
    * @param array<string, mixed> $data
    *   The response payload.
@@ -86,14 +98,10 @@ class AdminResultsController extends ControllerBase {
    *   HTTP status code.
    *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
-   *   The response with security headers applied.
+   *   A plain (non-cacheable) JSON response.
    */
-  private function jsonResponse(array $data, int $status = 200): JsonResponse {
-    $response = new JsonResponse($data, $status);
-    $response->headers->set('Cache-Control', 'no-store');
-    $response->headers->set('X-Content-Type-Options', 'nosniff');
-    $response->headers->set('X-Frame-Options', 'DENY');
-    return $response;
+  private function errorResponse(array $data, int $status): JsonResponse {
+    return new JsonResponse($data, $status);
   }
 
 }

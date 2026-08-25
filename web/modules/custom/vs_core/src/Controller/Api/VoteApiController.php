@@ -149,7 +149,11 @@ class VoteApiController extends ControllerBase {
   }
 
   /**
-   * Builds a JsonResponse with standard security headers.
+   * Builds a JsonResponse for this write endpoint.
+   *
+   * Security headers (X-Content-Type-Options, X-Frame-Options) and
+   * Cache-Control: no-store are applied by VotingRequestSubscriber for all
+   * non-GET responses to /api/v1/ — no per-controller header logic is needed.
    *
    * @param array<string, mixed> $data
    *   The response payload.
@@ -157,14 +161,10 @@ class VoteApiController extends ControllerBase {
    *   HTTP status code.
    *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
-   *   The response with security headers applied.
+   *   The response.
    */
   private function jsonResponse(array $data, int $status = 200): JsonResponse {
-    $response = new JsonResponse($data, $status);
-    $response->headers->set('Cache-Control', 'no-store');
-    $response->headers->set('X-Content-Type-Options', 'nosniff');
-    $response->headers->set('X-Frame-Options', 'DENY');
-    return $response;
+    return new JsonResponse($data, $status);
   }
 
 }

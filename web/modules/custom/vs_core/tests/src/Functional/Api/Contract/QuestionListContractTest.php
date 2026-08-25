@@ -104,4 +104,43 @@ class QuestionListContractTest extends BrowserTestBase {
     );
   }
 
+  /**
+   * GET 200 response does not carry Cache-Control: no-store.
+   *
+   * GET responses carry Drupal cache tags and must never be marked no-store —
+   * that would prevent Varnish/CDN from using them.
+   */
+  public function testGet200ResponseDoesNotHaveNoStoreDirective(): void {
+    $user = $this->drupalCreateUser(['vote']);
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
+
+    $this->drupalGet('/api/v1/questions', [], ['Authorization' => $authHeader]);
+
+    $this->assertSession()->statusCodeEquals(200);
+    $cacheControl = $this->getSession()->getResponseHeader('Cache-Control') ?? '';
+    $this->assertStringNotContainsString('no-store', $cacheControl);
+  }
+
+  /**
+   * GET 200 response Cache-Control allows revalidation.
+   *
+   * Drupal sets must-revalidate or no-cache for authenticated GET responses
+   * when a CacheableResponse is returned.
+   */
+  public function testGet200ResponseCacheControlAllowsRevalidation(): void {
+    $user = $this->drupalCreateUser(['vote']);
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
+
+    $this->drupalGet('/api/v1/questions', [], ['Authorization' => $authHeader]);
+
+    $this->assertSession()->statusCodeEquals(200);
+    $cacheControl = $this->getSession()->getResponseHeader('Cache-Control') ?? '';
+    $hasNoCache = str_contains($cacheControl, 'no-cache');
+    $hasMustRevalidate = str_contains($cacheControl, 'must-revalidate');
+    $this->assertTrue(
+      $hasNoCache || $hasMustRevalidate,
+      "Cache-Control must contain 'no-cache' or 'must-revalidate'; got: $cacheControl"
+    );
+  }
+
 }

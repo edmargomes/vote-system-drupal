@@ -178,4 +178,56 @@ class AdminResultsContractTest extends BrowserTestBase {
     $this->assertSame($option->uuid(), $row['option_uuid']);
   }
 
+  /**
+   * GET 200 admin results response does not carry Cache-Control: no-store.
+   */
+  public function testGet200ResponseDoesNotHaveNoStoreDirective(): void {
+    $admin = $this->drupalCreateUser(['administer voting']);
+    $authHeader = 'Basic ' . base64_encode($admin->getAccountName() . ':' . $admin->passRaw);
+
+    $questionStorage = $this->container->get('entity_type.manager')
+      ->getStorage('voting_question');
+    $question = $questionStorage->create(['title' => 'CC no-store?', 'status' => TRUE]);
+    $question->save();
+
+    $response = $this->apiGet(
+      '/api/v1/admin/questions/' . $question->uuid() . '/results',
+      $authHeader,
+    );
+
+    $this->assertSame(200, $response->getStatusCode());
+    $cacheControl = $response->getHeaderLine('Cache-Control');
+    $this->assertStringNotContainsString('no-store', $cacheControl);
+  }
+
+  /**
+   * GET 200 admin results response Cache-Control allows revalidation.
+   */
+  public function testGet200ResponseCacheControlAllowsRevalidation(): void {
+    $admin = $this->drupalCreateUser(['administer voting']);
+    $authHeader = 'Basic ' . base64_encode($admin->getAccountName() . ':' . $admin->passRaw);
+
+    $questionStorage = $this->container->get('entity_type.manager')
+      ->getStorage('voting_question');
+    $question = $questionStorage->create([
+      'title' => 'CC revalidate admin?',
+      'status' => TRUE,
+    ]);
+    $question->save();
+
+    $response = $this->apiGet(
+      '/api/v1/admin/questions/' . $question->uuid() . '/results',
+      $authHeader,
+    );
+
+    $this->assertSame(200, $response->getStatusCode());
+    $cacheControl = $response->getHeaderLine('Cache-Control');
+    $hasNoCache = str_contains($cacheControl, 'no-cache');
+    $hasMustRevalidate = str_contains($cacheControl, 'must-revalidate');
+    $this->assertTrue(
+      $hasNoCache || $hasMustRevalidate,
+      "Cache-Control must contain 'no-cache' or 'must-revalidate'; got: $cacheControl"
+    );
+  }
+
 }

@@ -7,6 +7,7 @@ namespace Drupal\vs_core\EventSubscriber;
 use Drupal\Component\Uuid\Php as UuidGenerator;
 use Drupal\vs_core\Service\VotingLogger;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -85,6 +86,14 @@ class VotingRequestSubscriber implements EventSubscriberInterface {
     $response->headers->set('X-Correlation-ID', $this->correlationId);
     $response->headers->set('X-Content-Type-Options', 'nosniff');
     $response->headers->set('X-Frame-Options', 'DENY');
+
+    // Prevent proxies from storing write-response bodies. GET responses carry
+    // Drupal cache tags and must not receive no-store so Varnish/CDN can use
+    // them. RFC 9110 forbids caching non-2xx or non-explict-cacheable statuses
+    // by default, so 401/403 on GET require no extra directive here.
+    if ($request->getMethod() !== Request::METHOD_GET) {
+      $response->headers->set('Cache-Control', 'no-store');
+    }
   }
 
 }

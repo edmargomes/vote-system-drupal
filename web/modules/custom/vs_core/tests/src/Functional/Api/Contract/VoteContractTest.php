@@ -163,6 +163,76 @@ class VoteContractTest extends BrowserTestBase {
   }
 
   /**
+   * Successful POST /vote response carries Cache-Control: no-store.
+   */
+  public function testSuccessfulVoteResponseHasNoStoreHeader(): void {
+    $user = $this->drupalCreateUser(['vote']);
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
+
+    $questionStorage = $this->container->get('entity_type.manager')
+      ->getStorage('voting_question');
+    $question = $questionStorage->create(['title' => 'No-store vote?', 'status' => TRUE]);
+    $question->save();
+
+    $optionStorage = $this->container->get('entity_type.manager')
+      ->getStorage('voting_option');
+    $option = $optionStorage->create(['label' => 'Yes', 'question_id' => $question->id()]);
+    $option->save();
+
+    $response = $this->apiPost(
+      '/api/v1/questions/' . $question->uuid() . '/vote',
+      ['option_uuid' => $option->uuid()],
+      $authHeader,
+    );
+
+    $this->assertSame(200, $response->getStatusCode());
+    $this->assertStringContainsString('no-store', $response->getHeaderLine('Cache-Control'));
+  }
+
+  /**
+   * Duplicate POST /vote 409 response carries Cache-Control: no-store.
+   */
+  public function testDuplicateVote409ResponseHasNoStoreHeader(): void {
+    $user = $this->drupalCreateUser(['vote']);
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
+
+    $questionStorage = $this->container->get('entity_type.manager')
+      ->getStorage('voting_question');
+    $question = $questionStorage->create([
+      'title' => 'Dup no-store test?',
+      'status' => TRUE,
+    ]);
+    $question->save();
+
+    $optionStorage = $this->container->get('entity_type.manager')
+      ->getStorage('voting_option');
+    $option = $optionStorage->create(['label' => 'Opt', 'question_id' => $question->id()]);
+    $option->save();
+
+    $path = '/api/v1/questions/' . $question->uuid() . '/vote';
+    $body = ['option_uuid' => $option->uuid()];
+
+    $this->apiPost($path, $body, $authHeader);
+    $response = $this->apiPost($path, $body, $authHeader);
+
+    $this->assertSame(409, $response->getStatusCode());
+    $this->assertStringContainsString('no-store', $response->getHeaderLine('Cache-Control'));
+  }
+
+  /**
+   * Unauthenticated POST /vote 401 response carries Cache-Control: no-store.
+   */
+  public function testUnauthenticatedVote401ResponseHasNoStoreHeader(): void {
+    $response = $this->apiPost(
+      '/api/v1/questions/some-uuid/vote',
+      ['option_uuid' => '00000000-0000-0000-0000-000000000001'],
+    );
+
+    $this->assertSame(401, $response->getStatusCode());
+    $this->assertStringContainsString('no-store', $response->getHeaderLine('Cache-Control'));
+  }
+
+  /**
    * When voting is disabled, POST /vote returns 403.
    */
   public function testVoteWhenDisabledReturns403(): void {
