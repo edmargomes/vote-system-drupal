@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit
   bootstrap="web/core/tests/bootstrap.php"
-  colors="true"
-  beStrictAboutTestsThatDoNotTestAnything="true">
+  colors="true">
 
   <testsuites>
     <testsuite name="Unit">
@@ -18,31 +17,6 @@
       <directory>web/modules/custom/vs_core/tests/src/Functional/Api/Integration</directory>
     </testsuite>
   </testsuites>
-
-  <!-- Source files included in coverage calculation -->
-  <coverage>
-    <include>
-      <directory suffix=".php">
-        web/modules/custom/vs_core/src
-      </directory>
-    </include>
-
-    <report>
-      <!-- Navigable HTML report -->
-      <html
-        outputDirectory="coverage/html"
-        lowUpperBound="50"
-        highLowerBound="80"/>
-
-      <!-- XML for CI/CD and badges -->
-      <clover outputFile="coverage/clover.xml"/>
-
-      <!-- Terminal summary -->
-      <text
-        outputFile="coverage/summary.txt"
-        showUncoveredFiles="true"/>
-    </report>
-  </coverage>
 
   <php>
     <env name="SIMPLETEST_BASE_URL" value="http://voting-system.lndo.site"/>

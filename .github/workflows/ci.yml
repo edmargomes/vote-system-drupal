@@ -56,7 +56,7 @@ jobs:
         with:
           php-version: '8.4'
           extensions: mbstring, xml, intl, pdo_mysql, gd, zip
-          coverage: xdebug
+          coverage: none
           tools: composer:v2
 
       - name: Cache Composer packages
@@ -70,7 +70,7 @@ jobs:
         run: composer install --prefer-dist --no-progress --no-interaction
 
       - name: PHPUnit — Unit suite
-        run: ./vendor/bin/phpunit --testsuite=Unit --coverage-text
+        run: ./vendor/bin/phpunit --testsuite=Unit
 
   # ──────────────────────────────────────────────────────────────────────────
   # Job 3 — Kernel + Contract + Integration (needs MySQL + Drupal installed)
