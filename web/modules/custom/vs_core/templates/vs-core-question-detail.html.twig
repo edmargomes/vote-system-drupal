@@ -1,0 +1,79 @@
+{#
+/**
+ * @file
+ * Template for the CMS voting question detail page.
+ *
+ * Available variables:
+ * - question_title: string
+ * - question_description: string|null
+ * - voting_enabled: Boolean
+ * - already_voted: Boolean
+ * - voted_option_label: string|null — set when already_voted is true.
+ * - show_results: Boolean
+ * - results: array|null — rows from ResultService::getResults().
+ * - form: array — the rendered VotingForm render array; empty when hidden.
+ */
+#}
+<h1>{{ question_title }}</h1>
+
+{% if question_description %}
+  <div class="vs-core-question-description">
+    {{ question_description }}
+  </div>
+{% endif %}
+
+{% if not voting_enabled %}
+  <div class="messages messages--warning">
+    {{ 'Voting is currently unavailable.'|t }}
+  </div>
+{% elseif already_voted %}
+  <div class="messages messages--status vs-core-already-voted">
+    {{ 'You already voted for: %label.'|t({'%label': voted_option_label}) }}
+  </div>
+  {% if show_results and results %}
+    <div class="vs-core-results">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ 'Option'|t }}</th>
+            <th>{{ 'Votes'|t }}</th>
+            <th>{{ 'Percentage'|t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in results %}
+            <tr>
+              <td>{{ row.title }}</td>
+              <td>{{ row.votes }}</td>
+              <td>{{ row.percentage }}%</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% else %}
+  {{ form }}
+  {% if show_results and results %}
+    <div class="vs-core-results">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ 'Option'|t }}</th>
+            <th>{{ 'Votes'|t }}</th>
+            <th>{{ 'Percentage'|t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in results %}
+            <tr>
+              <td>{{ row.title }}</td>
+              <td>{{ row.votes }}</td>
+              <td>{{ row.percentage }}%</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endif %}

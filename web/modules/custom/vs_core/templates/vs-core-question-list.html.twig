@@ -1,0 +1,44 @@
+{#
+/**
+ * @file
+ * Template for the CMS voting question list page.
+ *
+ * Available variables:
+ * - voting_enabled: Boolean — when false, a notice is shown above the list.
+ * - is_anonymous: Boolean — when true, a login/register CTA banner is shown.
+ * - questions: Array of items, each containing:
+ *   - uuid: string
+ *   - title: string
+ *   - description: string|null
+ *   - url: Drupal\Core\Url — link to the question detail page.
+ */
+#}
+{% if not voting_enabled %}
+  <div class="messages messages--warning">
+    {{ 'Voting is currently unavailable.'|t }}
+  </div>
+{% endif %}
+
+{% if is_anonymous %}
+  <div class="vs-core-cta">
+    <p>{{ 'Log in or create an account to participate.'|t }}</p>
+    <a href="{{ path('user.login') }}">{{ 'Log in'|t }}</a>
+    {{ ' | '|t }}
+    <a href="{{ path('user.register') }}">{{ 'Create an account'|t }}</a>
+  </div>
+{% endif %}
+
+{% if questions is empty %}
+  <p>{{ 'There are no active questions at this time.'|t }}</p>
+{% else %}
+  <ul class="vs-core-question-list">
+    {% for question in questions %}
+      <li class="vs-core-question-list__item">
+        <a href="{{ question.url }}">{{ question.title }}</a>
+        {% if question.description %}
+          <p>{{ question.description }}</p>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
