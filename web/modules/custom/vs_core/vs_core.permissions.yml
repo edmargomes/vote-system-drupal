@@ -6,3 +6,7 @@ administer voting:
 vote:
   title: 'Cast a vote'
   description: 'Submit a vote via the CMS interface.'
+
+access voting api:
+  title: 'Access voting API (read-only)'
+  description: 'Allows listing questions and viewing question detail via the REST API.'

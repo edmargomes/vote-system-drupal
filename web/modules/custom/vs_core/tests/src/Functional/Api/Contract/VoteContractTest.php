@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\vs_core\Functional\Api\Contract;
 
+use Psr\Http\Message\ResponseInterface;
 use Drupal\Tests\BrowserTestBase;
+use GuzzleHttp\RequestOptions;
 
 /**
  * Verifies the vote endpoint contract.
@@ -25,16 +27,40 @@ class VoteContractTest extends BrowserTestBase {
   protected $defaultTheme = 'stark';
 
   /**
+   * Makes a POST request to the given path and returns the response.
+   *
+   * @param string $path
+   *   The site-relative path.
+   * @param array<string, mixed> $body
+   *   JSON-encodable request body.
+   * @param string $authHeader
+   *   The Authorization header value, or empty string for unauthenticated.
+   *
+   * @return \Psr\Http\Message\ResponseInterface
+   *   The HTTP response.
+   */
+  private function apiPost(string $path, array $body, string $authHeader = ''): ResponseInterface {
+    $url = $this->buildUrl($path, ['absolute' => TRUE]);
+    $options = [
+      RequestOptions::JSON => $body,
+      RequestOptions::HTTP_ERRORS => FALSE,
+    ];
+    if ($authHeader !== '') {
+      $options[RequestOptions::HEADERS] = ['Authorization' => $authHeader];
+    }
+    return $this->getHttpClient()->post($url, $options);
+  }
+
+  /**
    * POST /api/v1/questions/{uuid}/vote without credentials returns 401.
    */
   public function testVoteWithoutCredentialsReturns401(): void {
-    $this->drupalGet('/api/v1/questions/some-uuid/vote', [
-      'method' => 'POST',
-      'body' => json_encode(['option_uuid' => '00000000-0000-0000-0000-000000000001']),
-      'headers' => ['Content-Type' => 'application/json'],
-    ]);
+    $response = $this->apiPost(
+      '/api/v1/questions/some-uuid/vote',
+      ['option_uuid' => '00000000-0000-0000-0000-000000000001'],
+    );
 
-    $this->assertSession()->statusCodeEquals(401);
+    $this->assertSame(401, $response->getStatusCode());
   }
 
   /**
@@ -52,18 +78,15 @@ class VoteContractTest extends BrowserTestBase {
     $option = $optionStorage->create(['label' => 'Yes', 'question_id' => $question->id()]);
     $option->save();
 
-    $this->drupalGet('/api/v1/questions/' . $question->uuid() . '/vote', [
-      'method' => 'POST',
-      'body' => json_encode(['option_uuid' => $option->uuid()]),
-      'headers' => [
-        'Content-Type' => 'application/json',
-        'Authorization' => $authHeader,
-      ],
-    ]);
+    $response = $this->apiPost(
+      '/api/v1/questions/' . $question->uuid() . '/vote',
+      ['option_uuid' => $option->uuid()],
+      $authHeader,
+    );
 
-    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSame(200, $response->getStatusCode());
 
-    $body = json_decode($this->getSession()->getPage()->getContent(), TRUE);
+    $body = json_decode((string) $response->getBody(), TRUE);
     $this->assertSame('success', $body['status']);
   }
 
@@ -82,18 +105,14 @@ class VoteContractTest extends BrowserTestBase {
     $option = $optionStorage->create(['label' => 'Opt', 'question_id' => $question->id()]);
     $option->save();
 
-    $url = '/api/v1/questions/' . $question->uuid() . '/vote';
-    $body = json_encode(['option_uuid' => $option->uuid()]);
-    $headers = [
-      'Content-Type' => 'application/json',
-      'Authorization' => $authHeader,
-    ];
+    $path = '/api/v1/questions/' . $question->uuid() . '/vote';
+    $body = ['option_uuid' => $option->uuid()];
 
-    $this->drupalGet($url, ['method' => 'POST', 'body' => $body, 'headers' => $headers]);
-    $this->assertSession()->statusCodeEquals(200);
+    $first = $this->apiPost($path, $body, $authHeader);
+    $this->assertSame(200, $first->getStatusCode());
 
-    $this->drupalGet($url, ['method' => 'POST', 'body' => $body, 'headers' => $headers]);
-    $this->assertSession()->statusCodeEquals(409);
+    $second = $this->apiPost($path, $body, $authHeader);
+    $this->assertSame(409, $second->getStatusCode());
   }
 
   /**
@@ -107,16 +126,40 @@ class VoteContractTest extends BrowserTestBase {
     $question = $questionStorage->create(['title' => 'No option?', 'status' => TRUE]);
     $question->save();
 
-    $this->drupalGet('/api/v1/questions/' . $question->uuid() . '/vote', [
-      'method' => 'POST',
-      'body' => json_encode([]),
-      'headers' => [
-        'Content-Type' => 'application/json',
-        'Authorization' => $authHeader,
-      ],
-    ]);
+    $response = $this->apiPost(
+      '/api/v1/questions/' . $question->uuid() . '/vote',
+      [],
+      $authHeader,
+    );
 
-    $this->assertSession()->statusCodeEquals(422);
+    $this->assertSame(422, $response->getStatusCode());
+  }
+
+  /**
+   * Successful vote response includes the X-Correlation-ID header.
+   */
+  public function testResponseIncludesCorrelationIdHeader(): void {
+    $user = $this->drupalCreateUser(['vote']);
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
+
+    $questionStorage = $this->container->get('entity_type.manager')->getStorage('voting_question');
+    $question = $questionStorage->create(['title' => 'Header test?', 'status' => TRUE]);
+    $question->save();
+
+    $optionStorage = $this->container->get('entity_type.manager')->getStorage('voting_option');
+    $option = $optionStorage->create(['label' => 'Yes', 'question_id' => $question->id()]);
+    $option->save();
+
+    $response = $this->apiPost(
+      '/api/v1/questions/' . $question->uuid() . '/vote',
+      ['option_uuid' => $option->uuid()],
+      $authHeader,
+    );
+
+    $this->assertNotEmpty(
+      $response->getHeaderLine('X-Correlation-ID'),
+      'X-Correlation-ID header must be present on all API responses.'
+    );
   }
 
   /**
@@ -136,16 +179,13 @@ class VoteContractTest extends BrowserTestBase {
     $option = $optionStorage->create(['label' => 'Yes', 'question_id' => $question->id()]);
     $option->save();
 
-    $this->drupalGet('/api/v1/questions/' . $question->uuid() . '/vote', [
-      'method' => 'POST',
-      'body' => json_encode(['option_uuid' => $option->uuid()]),
-      'headers' => [
-        'Content-Type' => 'application/json',
-        'Authorization' => $authHeader,
-      ],
-    ]);
+    $response = $this->apiPost(
+      '/api/v1/questions/' . $question->uuid() . '/vote',
+      ['option_uuid' => $option->uuid()],
+      $authHeader,
+    );
 
-    $this->assertSession()->statusCodeEquals(403);
+    $this->assertSame(403, $response->getStatusCode());
   }
 
 }

@@ -16,7 +16,7 @@ class VotingEntityTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['vs_core', 'user', 'system'];
+  protected static $modules = ['vs_core', 'user', 'system', 'file', 'image', 'text'];
 
   /**
    * {@inheritdoc}

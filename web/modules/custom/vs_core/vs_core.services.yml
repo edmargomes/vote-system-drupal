@@ -1,12 +1,15 @@
 services:
 
+  vs_core.validator:
+    class: Drupal\vs_core\Validator\VotePayloadValidator
+
   vs_core.logger:
     class: Drupal\vs_core\Service\VotingLogger
     arguments: ['@logger.factory']
 
   vs_core.voting:
     class: Drupal\vs_core\Service\VotingService
-    arguments: ['@entity_type.manager', '@database', '@config.factory', '@vs_core.logger']
+    arguments: ['@entity_type.manager', '@database', '@config.factory', '@vs_core.logger', '@datetime.time']
 
   vs_core.question:
     class: Drupal\vs_core\Service\QuestionService

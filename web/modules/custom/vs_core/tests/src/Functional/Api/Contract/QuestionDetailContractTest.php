@@ -39,9 +39,11 @@ class QuestionDetailContractTest extends BrowserTestBase {
     $user = $this->drupalCreateUser(['vote']);
     $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
 
-    $this->drupalGet('/api/v1/questions/00000000-0000-0000-0000-000000000000', [
-      'headers' => ['Authorization' => $authHeader],
-    ]);
+    $this->drupalGet(
+      '/api/v1/questions/00000000-0000-0000-0000-000000000000',
+      [],
+      ['Authorization' => $authHeader],
+    );
 
     $this->assertSession()->statusCodeEquals(404);
   }
@@ -61,9 +63,11 @@ class QuestionDetailContractTest extends BrowserTestBase {
     $optionStorage->create(['label' => 'Yes', 'question_id' => $question->id()])->save();
     $optionStorage->create(['label' => 'No', 'question_id' => $question->id()])->save();
 
-    $this->drupalGet('/api/v1/questions/' . $question->uuid(), [
-      'headers' => ['Authorization' => $authHeader],
-    ]);
+    $this->drupalGet(
+      '/api/v1/questions/' . $question->uuid(),
+      [],
+      ['Authorization' => $authHeader],
+    );
 
     $this->assertSession()->statusCodeEquals(200);
 
@@ -73,6 +77,29 @@ class QuestionDetailContractTest extends BrowserTestBase {
     $this->assertArrayHasKey('title', $body['data']);
     $this->assertArrayHasKey('options', $body['data']);
     $this->assertCount(2, $body['data']['options']);
+  }
+
+  /**
+   * Successful response includes the X-Correlation-ID header.
+   */
+  public function testResponseIncludesCorrelationIdHeader(): void {
+    $user = $this->drupalCreateUser(['vote']);
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
+
+    $questionStorage = $this->container->get('entity_type.manager')->getStorage('voting_question');
+    $question = $questionStorage->create(['title' => 'Header test?', 'status' => TRUE]);
+    $question->save();
+
+    $this->drupalGet(
+      '/api/v1/questions/' . $question->uuid(),
+      [],
+      ['Authorization' => $authHeader],
+    );
+
+    $this->assertNotEmpty(
+      $this->getSession()->getResponseHeader('X-Correlation-ID'),
+      'X-Correlation-ID header must be present on all API responses.'
+    );
   }
 
   /**
@@ -89,9 +116,11 @@ class QuestionDetailContractTest extends BrowserTestBase {
     $optionStorage = $this->container->get('entity_type.manager')->getStorage('voting_option');
     $optionStorage->create(['label' => 'Option A', 'question_id' => $question->id()])->save();
 
-    $this->drupalGet('/api/v1/questions/' . $question->uuid(), [
-      'headers' => ['Authorization' => $authHeader],
-    ]);
+    $this->drupalGet(
+      '/api/v1/questions/' . $question->uuid(),
+      [],
+      ['Authorization' => $authHeader],
+    );
 
     $body = json_decode($this->getSession()->getPage()->getContent(), TRUE);
     $option = $body['data']['options'][0];

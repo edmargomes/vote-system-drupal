@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\vs_core\Functional\Api\Integration;
 
+use Psr\Http\Message\ResponseInterface;
 use Drupal\Tests\BrowserTestBase;
+use GuzzleHttp\RequestOptions;
 
 /**
  * Exercises the full voting flow end-to-end via the HTTP API.
@@ -25,6 +27,47 @@ class VotingFullFlowTest extends BrowserTestBase {
    * {@inheritdoc}
    */
   protected $defaultTheme = 'stark';
+
+  /**
+   * Makes a GET request with optional Authorization header.
+   *
+   * @param string $path
+   *   The site-relative path.
+   * @param string $authHeader
+   *   The Authorization header value.
+   *
+   * @return \Psr\Http\Message\ResponseInterface
+   *   The HTTP response.
+   */
+  private function apiGet(string $path, string $authHeader): ResponseInterface {
+    $url = $this->buildUrl($path, ['absolute' => TRUE]);
+    return $this->getHttpClient()->get($url, [
+      RequestOptions::HEADERS => ['Authorization' => $authHeader],
+      RequestOptions::HTTP_ERRORS => FALSE,
+    ]);
+  }
+
+  /**
+   * Makes a POST request and returns the response.
+   *
+   * @param string $path
+   *   The site-relative path.
+   * @param array<string, mixed> $body
+   *   JSON-encodable request body.
+   * @param string $authHeader
+   *   The Authorization header value.
+   *
+   * @return \Psr\Http\Message\ResponseInterface
+   *   The HTTP response.
+   */
+  private function apiPost(string $path, array $body, string $authHeader): ResponseInterface {
+    $url = $this->buildUrl($path, ['absolute' => TRUE]);
+    return $this->getHttpClient()->post($url, [
+      RequestOptions::JSON => $body,
+      RequestOptions::HEADERS => ['Authorization' => $authHeader],
+      RequestOptions::HTTP_ERRORS => FALSE,
+    ]);
+  }
 
   /**
    * Full happy-path flow from Basic Auth to result retrieval.
@@ -50,52 +93,46 @@ class VotingFullFlowTest extends BrowserTestBase {
     $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
 
     // 3. List questions.
-    $this->drupalGet('/api/v1/questions', [
-      'headers' => ['Authorization' => $authHeader],
-    ]);
-    $this->assertSession()->statusCodeEquals(200);
+    $listResponse = $this->apiGet('/api/v1/questions', $authHeader);
+    $this->assertSame(200, $listResponse->getStatusCode());
 
-    $list = json_decode($this->getSession()->getPage()->getContent(), TRUE);
+    $list = json_decode((string) $listResponse->getBody(), TRUE);
     $this->assertArrayHasKey('data', $list);
     $this->assertNotEmpty($list['data']);
 
     // 4. View question detail.
-    $this->drupalGet('/api/v1/questions/' . $question->uuid(), [
-      'headers' => ['Authorization' => $authHeader],
-    ]);
-    $this->assertSession()->statusCodeEquals(200);
+    $detailResponse = $this->apiGet('/api/v1/questions/' . $question->uuid(), $authHeader);
+    $this->assertSame(200, $detailResponse->getStatusCode());
 
-    $detail = json_decode($this->getSession()->getPage()->getContent(), TRUE);
+    $detail = json_decode((string) $detailResponse->getBody(), TRUE);
     $this->assertSame($question->uuid(), $detail['data']['uuid']);
     $this->assertCount(2, $detail['data']['options']);
 
     // 5. Cast a vote using the option UUID from the detail response.
     $optAUuid = $optA->uuid();
-    $this->drupalGet('/api/v1/questions/' . $question->uuid() . '/vote', [
-      'method' => 'POST',
-      'body' => json_encode(['option_uuid' => $optAUuid]),
-      'headers' => [
-        'Content-Type' => 'application/json',
-        'Authorization' => $authHeader,
-      ],
-    ]);
-    $this->assertSession()->statusCodeEquals(200);
+    $voteResponse = $this->apiPost(
+      '/api/v1/questions/' . $question->uuid() . '/vote',
+      ['option_uuid' => $optAUuid],
+      $authHeader,
+    );
+    $this->assertSame(200, $voteResponse->getStatusCode());
 
-    $voteResponse = json_decode($this->getSession()->getPage()->getContent(), TRUE);
-    $this->assertSame('success', $voteResponse['status']);
+    $voteBody = json_decode((string) $voteResponse->getBody(), TRUE);
+    $this->assertSame('success', $voteBody['status']);
     // show_results is TRUE so results must be present in the vote response.
-    $this->assertArrayHasKey('results', $voteResponse);
+    $this->assertArrayHasKey('results', $voteBody);
 
     // 6. Admin retrieves results via Basic Auth.
     $admin = $this->drupalCreateUser(['administer voting']);
     $adminAuth = 'Basic ' . base64_encode($admin->getAccountName() . ':' . $admin->passRaw);
 
-    $this->drupalGet('/api/v1/admin/questions/' . $question->uuid() . '/results', [
-      'headers' => ['Authorization' => $adminAuth],
-    ]);
-    $this->assertSession()->statusCodeEquals(200);
+    $resultsResponse = $this->apiGet(
+      '/api/v1/admin/questions/' . $question->uuid() . '/results',
+      $adminAuth,
+    );
+    $this->assertSame(200, $resultsResponse->getStatusCode());
 
-    $results = json_decode($this->getSession()->getPage()->getContent(), TRUE);
+    $results = json_decode((string) $resultsResponse->getBody(), TRUE);
     $this->assertSame($question->uuid(), $results['question']['uuid']);
     $this->assertNotEmpty($results['results']);
 

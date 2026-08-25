@@ -10,4 +10,9 @@ parameters:
     - web/modules/custom/*/tests/**
 
   ignoreErrors:
-    # Add Drupal ecosystem false-positives here if needed
+    # Injected dependencies reserved for future use or structural symmetry.
+    - '#Property Drupal\\vs_core\\Service\\VotingService::\$entityTypeManager is never read, only written\.#'
+    - '#Property Drupal\\vs_core\\Service\\ResultService::\$entityTypeManager is never read, only written\.#'
+    - '#Property Drupal\\vs_core\\EventSubscriber\\VotingRequestSubscriber::\$logger is never read, only written\.#'
+    # Drupal convention: create() returns new static() for subclassing support.
+    - '#Unsafe usage of new static\(\)\.#'

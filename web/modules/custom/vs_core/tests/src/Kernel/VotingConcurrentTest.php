@@ -18,7 +18,7 @@ class VotingConcurrentTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['vs_core', 'user', 'system'];
+  protected static $modules = ['vs_core', 'user', 'system', 'file', 'image', 'text'];
 
   /**
    * {@inheritdoc}
@@ -30,6 +30,14 @@ class VotingConcurrentTest extends KernelTestBase {
     $this->installEntitySchema('voting_option');
     $this->installEntitySchema('voting_vote');
     $this->installConfig(['vs_core']);
+
+    // hook_install() is not invoked automatically in Kernel tests, so the
+    // unique constraint must be added explicitly after entity schema creation.
+    $this->container->get('database')->schema()->addUniqueKey(
+      'voting_vote',
+      'uq_user_question',
+      ['uid', 'question_id'],
+    );
   }
 
   /**

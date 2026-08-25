@@ -39,9 +39,7 @@ class QuestionListContractTest extends BrowserTestBase {
     $user = $this->drupalCreateUser(['vote']);
     $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
 
-    $this->drupalGet('/api/v1/questions', [
-      'headers' => ['Authorization' => $authHeader],
-    ]);
+    $this->drupalGet('/api/v1/questions', [], ['Authorization' => $authHeader]);
 
     $this->assertSession()->statusCodeEquals(200);
 
@@ -62,9 +60,7 @@ class QuestionListContractTest extends BrowserTestBase {
     $storage = $this->container->get('entity_type.manager')->getStorage('voting_question');
     $storage->create(['title' => 'Contract question', 'status' => TRUE])->save();
 
-    $this->drupalGet('/api/v1/questions', [
-      'headers' => ['Authorization' => $authHeader],
-    ]);
+    $this->drupalGet('/api/v1/questions', [], ['Authorization' => $authHeader]);
 
     $body = json_decode($this->getSession()->getPage()->getContent(), TRUE);
     $this->assertNotEmpty($body['data']);
@@ -87,12 +83,25 @@ class QuestionListContractTest extends BrowserTestBase {
     $storage->create(['title' => 'Question one', 'status' => TRUE])->save();
     $storage->create(['title' => 'Question two', 'status' => TRUE])->save();
 
-    $this->drupalGet('/api/v1/questions', [
-      'headers' => ['Authorization' => $authHeader],
-    ]);
+    $this->drupalGet('/api/v1/questions', [], ['Authorization' => $authHeader]);
 
     $body = json_decode($this->getSession()->getPage()->getContent(), TRUE);
     $this->assertSame(2, $body['meta']['total']);
+  }
+
+  /**
+   * Successful response includes the X-Correlation-ID header.
+   */
+  public function testResponseIncludesCorrelationIdHeader(): void {
+    $user = $this->drupalCreateUser(['vote']);
+    $authHeader = 'Basic ' . base64_encode($user->getAccountName() . ':' . $user->passRaw);
+
+    $this->drupalGet('/api/v1/questions', [], ['Authorization' => $authHeader]);
+
+    $this->assertNotEmpty(
+      $this->getSession()->getResponseHeader('X-Correlation-ID'),
+      'X-Correlation-ID header must be present on all API responses.'
+    );
   }
 
 }

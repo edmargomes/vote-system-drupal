@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\vs_core\Unit\Service;
 
-use Drupal\Core\Database\Exception\IntegrityConstraintViolationException;
+use Drupal\Core\Database\IntegrityConstraintViolationException;
 use Drupal\Core\Database\Query\Insert;
 use Drupal\Core\Database\Transaction;
 use Drupal\Core\Session\AccountInterface;
@@ -80,6 +80,38 @@ class VotingServiceTest extends UnitTestCase {
   }
 
   /**
+   * Creates a Transaction mock with a safe destructor.
+   *
+   * Drupal 11's Transaction has typed constructor-promoted properties that
+   * cause a fatal in __destruct() when the mock object is garbage-collected.
+   * Initialising those properties via reflection prevents the crash.
+   *
+   * @return \Drupal\Core\Database\Transaction
+   *   A Transaction mock that is safe to destroy.
+   */
+  private function createSafeTransactionMock(): Transaction {
+    $mock = $this->getMockBuilder(Transaction::class)
+      ->disableOriginalConstructor()
+      ->onlyMethods(['rollBack', '__destruct'])
+      ->getMock();
+
+    // Initialise typed readonly properties so that if the real __destruct
+    // ever runs (e.g. during PHP shutdown), it can access them without a
+    // "must not be accessed before initialization" fatal error.
+    $connectionMock = $this->createMock(Connection::class);
+    $ref = new \ReflectionProperty(Transaction::class, 'connection');
+    $ref->setValue($mock, $connectionMock);
+
+    $nameRef = new \ReflectionProperty(Transaction::class, 'name');
+    $nameRef->setValue($mock, 'test_transaction');
+
+    $idRef = new \ReflectionProperty(Transaction::class, 'id');
+    $idRef->setValue($mock, 'test_id');
+
+    return $mock;
+  }
+
+  /**
    * @covers ::isVotingEnabled
    */
   public function testIsVotingEnabledReturnsTrueWhenEnabled(): void {
@@ -115,7 +147,7 @@ class VotingServiceTest extends UnitTestCase {
     $option->method('id')->willReturn(3);
 
     $this->database->method('startTransaction')->willReturn(
-      $this->createMock(Transaction::class)
+      $this->createSafeTransactionMock()
     );
     $this->database->method('insert')->willThrowException(
       new IntegrityConstraintViolationException('Duplicate entry', 23000, new \Exception())
@@ -139,7 +171,7 @@ class VotingServiceTest extends UnitTestCase {
     $option = $this->createMock(VotingOptionInterface::class);
     $option->method('id')->willReturn(3);
 
-    $transaction = $this->createMock(Transaction::class);
+    $transaction = $this->createSafeTransactionMock();
     $this->database->expects($this->once())
       ->method('startTransaction')
       ->willReturn($transaction);
@@ -167,7 +199,7 @@ class VotingServiceTest extends UnitTestCase {
     $option->method('id')->willReturn(1);
 
     // Transaction must be started exactly once before the insert.
-    $transaction = $this->createMock(Transaction::class);
+    $transaction = $this->createSafeTransactionMock();
     $this->database->expects($this->once())
       ->method('startTransaction')
       ->willReturn($transaction);

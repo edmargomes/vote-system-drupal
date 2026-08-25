@@ -6,3 +6,6 @@ core_version_requirement: ^11
 dependencies:
   - drupal:basic_auth
   - drupal:user
+  - drupal:file
+  - drupal:image
+  - drupal:text
