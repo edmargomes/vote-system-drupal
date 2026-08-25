@@ -79,6 +79,7 @@ class VotingQuestionForm extends FormBase {
     $form['description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description'),
+      '#description' => $this->t('Optional text displayed below the question title to give voters additional context.'),
       '#required' => FALSE,
       '#default_value' => $entity ? $entity->get('description')->value : '',
     ];
@@ -86,12 +87,14 @@ class VotingQuestionForm extends FormBase {
     $form['status'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Active'),
+      '#description' => $this->t('When checked, this question is visible to voters. Uncheck to hide it temporarily without deleting it.'),
       '#default_value' => $entity ? (bool) $entity->get('status')->value : TRUE,
     ];
 
     $form['show_results'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Show results to voters'),
+      '#description' => $this->t('When checked, voters can see the current vote tally immediately after submitting their vote. When unchecked, results remain hidden until you enable this option.'),
       '#default_value' => $entity
         ? (bool) $entity->get('show_results')->value
         : FALSE,

@@ -98,6 +98,7 @@ class VotingOptionForm extends FormBase {
     $form['label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Label'),
+      '#description' => $this->t('The text displayed to voters as a selectable answer. Keep it short and clear.'),
       '#required' => TRUE,
       '#maxlength' => 255,
       '#default_value' => $entity ? $entity->get('label')->value : '',
@@ -106,6 +107,7 @@ class VotingOptionForm extends FormBase {
     $form['description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description'),
+      '#description' => $this->t('Optional additional text shown below the option label to give voters more context about this choice.'),
       '#required' => FALSE,
       '#default_value' => $entity ? $entity->get('description')->value : '',
     ];
@@ -118,6 +120,7 @@ class VotingOptionForm extends FormBase {
     $form['image'] = [
       '#type' => 'managed_file',
       '#title' => $this->t('Image'),
+      '#description' => $this->t('Optional image displayed alongside this option. Accepted formats: PNG, GIF, JPG, JPEG, WebP.'),
       '#required' => FALSE,
       '#upload_location' => 'public://voting-options/',
       '#upload_validators' => [
@@ -129,6 +132,7 @@ class VotingOptionForm extends FormBase {
     $form['weight'] = [
       '#type' => 'number',
       '#title' => $this->t('Weight'),
+      '#description' => $this->t('Controls the display order of options. Lower values appear first. Use 0 if order does not matter.'),
       '#required' => TRUE,
       '#default_value' => $entity ? (int) $entity->get('weight')->value : 0,
     ];
