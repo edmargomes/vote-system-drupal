@@ -67,6 +67,9 @@ class VotingService {
    *   The question being voted on.
    * @param \Drupal\vs_core\Entity\VotingOptionInterface $option
    *   The option selected by the user.
+   * @param string $source
+   *   The origin of the vote: 'api' for REST API submissions, 'cms' for the
+   *   CMS browser form. Defaults to 'api' for backward compatibility.
    *
    * @throws \Drupal\vs_core\Exception\DuplicateVoteException
    *   When the user has already voted on this question.
@@ -75,6 +78,7 @@ class VotingService {
     AccountInterface $user,
     VotingQuestionInterface $question,
     VotingOptionInterface $option,
+    string $source = 'api',
   ): void {
     $transaction = $this->database->startTransaction();
 
@@ -85,7 +89,7 @@ class VotingService {
           'question_id' => $question->id(),
           'option_id' => $option->id(),
           'uid' => $user->id(),
-          'source' => 'api',
+          'source' => $source,
           'created' => $this->time?->getRequestTime() ?? time(),
         ])
         ->execute();
@@ -104,6 +108,64 @@ class VotingService {
         $e,
       );
     }
+  }
+
+  /**
+   * Returns whether the given user has already voted on the given question.
+   *
+   * This is a read-only query used to conditionally hide or show the voting
+   * form in the CMS interface without triggering write operations.
+   *
+   * @param \Drupal\Core\Session\AccountInterface $user
+   *   The user to check.
+   * @param \Drupal\vs_core\Entity\VotingQuestionInterface $question
+   *   The question to check against.
+   *
+   * @return bool
+   *   TRUE if a vote row exists for this user/question pair, FALSE otherwise.
+   */
+  public function hasVoted(AccountInterface $user, VotingQuestionInterface $question): bool {
+    $count = $this->database->select('voting_vote', 'v')
+      ->condition('v.uid', $user->id())
+      ->condition('v.question_id', $question->id())
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+
+    return (int) $count > 0;
+  }
+
+  /**
+   * Returns the option the user voted for on the given question, or null.
+   *
+   * Used in the CMS detail page to display "You voted for: X" when the user
+   * has already cast a vote.
+   *
+   * @param \Drupal\Core\Session\AccountInterface $user
+   *   The user to look up.
+   * @param \Drupal\vs_core\Entity\VotingQuestionInterface $question
+   *   The question to look up.
+   *
+   * @return \Drupal\vs_core\Entity\VotingOptionInterface|null
+   *   The option entity the user voted for, or NULL if no vote exists.
+   */
+  public function getUserVote(AccountInterface $user, VotingQuestionInterface $question): ?VotingOptionInterface {
+    $optionId = $this->database->select('voting_vote', 'v')
+      ->fields('v', ['option_id'])
+      ->condition('v.uid', $user->id())
+      ->condition('v.question_id', $question->id())
+      ->execute()
+      ->fetchField();
+
+    if ($optionId === FALSE || $optionId === NULL) {
+      return NULL;
+    }
+
+    $option = $this->entityTypeManager
+      ->getStorage('voting_option')
+      ->load($optionId);
+
+    return $option instanceof VotingOptionInterface ? $option : NULL;
   }
 
 }

@@ -212,4 +212,68 @@ class VotingServiceTest extends UnitTestCase {
     $this->service->registerVote($user, $question, $option);
   }
 
+  /**
+   * @covers ::registerVote
+   */
+  public function testRegisterVoteDefaultsSourceToApi(): void {
+    $user = $this->createMock(AccountInterface::class);
+    $user->method('id')->willReturn(5);
+
+    $question = $this->createMock(VotingQuestionInterface::class);
+    $question->method('id')->willReturn(10);
+
+    $option = $this->createMock(VotingOptionInterface::class);
+    $option->method('id')->willReturn(3);
+
+    $transaction = $this->createSafeTransactionMock();
+    $this->database->method('startTransaction')->willReturn($transaction);
+
+    $capturedFields = [];
+    $insert = $this->createMock(Insert::class);
+    $insert->method('fields')->willReturnCallback(
+      function (array $fields) use ($insert, &$capturedFields): Insert {
+        $capturedFields = $fields;
+        return $insert;
+      }
+    );
+    $insert->method('execute')->willReturn(1);
+    $this->database->method('insert')->willReturn($insert);
+
+    $this->service->registerVote($user, $question, $option);
+
+    $this->assertSame('api', $capturedFields['source']);
+  }
+
+  /**
+   * @covers ::registerVote
+   */
+  public function testRegisterVoteAcceptsCmsSourceParameter(): void {
+    $user = $this->createMock(AccountInterface::class);
+    $user->method('id')->willReturn(5);
+
+    $question = $this->createMock(VotingQuestionInterface::class);
+    $question->method('id')->willReturn(10);
+
+    $option = $this->createMock(VotingOptionInterface::class);
+    $option->method('id')->willReturn(3);
+
+    $transaction = $this->createSafeTransactionMock();
+    $this->database->method('startTransaction')->willReturn($transaction);
+
+    $capturedFields = [];
+    $insert = $this->createMock(Insert::class);
+    $insert->method('fields')->willReturnCallback(
+      function (array $fields) use ($insert, &$capturedFields): Insert {
+        $capturedFields = $fields;
+        return $insert;
+      }
+    );
+    $insert->method('execute')->willReturn(1);
+    $this->database->method('insert')->willReturn($insert);
+
+    $this->service->registerVote($user, $question, $option, 'cms');
+
+    $this->assertSame('cms', $capturedFields['source']);
+  }
+
 }
