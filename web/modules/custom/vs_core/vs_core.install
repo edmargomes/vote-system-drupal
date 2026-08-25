@@ -11,6 +11,9 @@
  * Adds the UNIQUE(uid, question_id) constraint to voting_vote after entity
  * tables are created. This constraint is the source of truth for vote
  * deduplication and cannot be expressed through entity annotations alone.
+ *
+ * Also sets the site front page to /vote so the question list is the default
+ * landing page for visitors.
  */
 function vs_core_install(): void {
   \Drupal::database()->schema()->addUniqueKey(
@@ -18,4 +21,29 @@ function vs_core_install(): void {
     'uq_user_question',
     ['uid', 'question_id'],
   );
+
+  \Drupal::configFactory()->getEditable('system.site')
+    ->set('page.front', '/vote')
+    ->save(TRUE);
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Resets the front page to the Drupal default login page so the site
+ * does not serve a 404 after the module is removed.
+ */
+function vs_core_uninstall(): void {
+  \Drupal::configFactory()->getEditable('system.site')
+    ->set('page.front', '/user/login')
+    ->save(TRUE);
+}
+
+/**
+ * Sets the site front page to /vote on already-installed sites.
+ */
+function vs_core_update_10001(): void {
+  \Drupal::configFactory()->getEditable('system.site')
+    ->set('page.front', '/vote')
+    ->save(TRUE);
 }
