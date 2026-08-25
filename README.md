@@ -2,6 +2,27 @@
 
 A custom Drupal 11 module implementing a poll/voting system. The REST API is built manually (no JSON:API or GraphQL), with custom token authentication, single-vote-per-user enforcement via a database unique constraint, and per-question result visibility control.
 
+## Quick Start
+
+```bash
+git clone <repo-url>
+cd vote-system-drupal
+lando setup-project
+```
+
+That's it. The command starts Lando, creates your `.env` (with a generated hash salt), installs PHP dependencies, imports the initial database, and runs `drush deploy`.
+
+When it finishes you'll see:
+
+```
+  Site  http://voting-system.lndo.site
+  Docs  https://github.com/edmargomes/vote-system-drupal/wiki
+```
+
+For a full setup guide and admin tutorials see the [project wiki](https://github.com/edmargomes/vote-system-drupal/wiki).
+
+---
+
 ## Requirements
 
 - [Lando](https://lando.dev/) (local development environment)
@@ -9,27 +30,7 @@ A custom Drupal 11 module implementing a poll/voting system. The REST API is bui
 - Drupal 11
 - MySQL 8.4
 
-## Setup
-
-```bash
-# 1. Clone the repository
-git clone <repo-url>
-cd vote-system-drupal
-
-# 2. Start the Lando environment
-lando start
-
-# 3. Install PHP dependencies
-lando composer install
-
-# 4. Import the database dump
-lando db-import dump/voting_system.sql
-
-# 5. Clear caches
-lando drush cr
-```
-
-The site will be available at **http://voting-system.lndo.site**.
+---
 
 ## Running Tests
 
@@ -50,7 +51,7 @@ lando test-integration
 lando phpunit
 ```
 
-For the full testing guide, see the [Running Tests](https://github.com/edmargomes/vote-system-drupal/wiki/Running-Tests) page in the project wiki.
+For the full testing guide see [Running Tests](https://github.com/edmargomes/vote-system-drupal/wiki/Running-Tests) in the wiki.
 
 ## Code Quality
 
