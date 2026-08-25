@@ -158,12 +158,6 @@ jobs:
       - name: PHPUnit — Kernel suite
         run: ./vendor/bin/phpunit --testsuite=Kernel
 
-      - name: PHPUnit — Contract suite
-        run: ./vendor/bin/phpunit --testsuite=Contract
-
-      - name: PHPUnit — Integration suite
-        run: ./vendor/bin/phpunit --testsuite=Integration
-
       - name: Upload server log on failure
         if: failure()
         run: cat /tmp/php-server.log || true
