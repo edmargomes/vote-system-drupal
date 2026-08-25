@@ -7,6 +7,8 @@ namespace Drupal\Tests\vs_core\Kernel;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\user\Entity\User;
 use Drupal\vs_core\Entity\VotingOptionInterface;
+use Drupal\vs_core\Entity\VotingQuestionInterface;
+use Drupal\vs_core\Service\VotingService;
 
 /**
  * Verifies the CMS-oriented methods added to VotingService.
@@ -27,21 +29,21 @@ class VotingServiceCmsTest extends KernelTestBase {
    *
    * @var \Drupal\vs_core\Service\VotingService
    */
-  private object $votingService;
+  private VotingService $votingService;
 
   /**
    * A persisted voting question entity.
    *
    * @var \Drupal\vs_core\Entity\VotingQuestionInterface
    */
-  private object $question;
+  private VotingQuestionInterface $question;
 
   /**
    * A persisted voting option entity.
    *
    * @var \Drupal\vs_core\Entity\VotingOptionInterface
    */
-  private object $option;
+  private VotingOptionInterface $option;
 
   /**
    * A persisted Drupal user.

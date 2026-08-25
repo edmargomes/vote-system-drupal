@@ -53,16 +53,19 @@ class QuestionDetailCmsTest extends BrowserTestBase {
   }
 
   /**
-   * Anonymous user visiting the detail page is redirected to login.
+   * Anonymous user visiting the detail page is redirected to login with dest.
    */
   public function testAnonymousRedirectsToLogin(): void {
     [$question] = $this->createQuestionWithOption();
 
-    $this->drupalGet('/vote/' . $question->uuid());
+    $uuid = $question->uuid();
+    $this->drupalGet('/vote/' . $uuid);
 
     // Drupal issues a 403 for _user_is_logged_in routes for anonymous users,
-    // and the exception subscriber redirects them to /user/login.
+    // and the exception subscriber redirects them to /user/login with a
+    // destination query parameter pointing back to the original URL.
     $this->assertSession()->addressMatches('#/user/login#');
+    $this->assertSession()->addressMatches('#destination#');
   }
 
   /**
@@ -259,10 +262,13 @@ class QuestionDetailCmsTest extends BrowserTestBase {
 
     $this->drupalGet('/vote/' . $question->uuid());
 
-    // Submit without filling in the radios — expect an HTML5 / form error.
-    $this->getSession()->getPage()->pressButton('Vote');
+    // Submit without filling in the radios.
+    $this->submitForm([], 'Vote');
 
-    // No vote should be saved.
+    // A form validation error must be shown.
+    $this->assertSession()->pageTextContains('field is required');
+
+    // No vote should be saved — the constraint is enforced before any insert.
     $count = (int) $this->container->get('database')
       ->select('voting_vote', 'v')
       ->condition('v.uid', $user->id())

@@ -71,10 +71,11 @@ class VotingCmsController extends ControllerBase {
         'uuid' => $question->uuid(),
         'title' => $question->label(),
         'description' => $question->get('description')->value,
+        // Pass the Url object to preserve render pipeline cache context.
         'url' => Url::fromRoute(
           'vs_core.cms.question_detail',
           ['uuid' => $question->uuid()],
-        )->toString(),
+        ),
       ];
     }
 
