@@ -50,6 +50,8 @@ lando test-integration
 lando phpunit
 ```
 
+For the full testing guide, see the [Running Tests](https://github.com/edmargomes/vote-system-drupal/wiki/Running-Tests) page in the project wiki.
+
 ## Code Quality
 
 ```bash
