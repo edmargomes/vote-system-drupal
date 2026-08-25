@@ -1,3 +1,23 @@
+# CMS — Voting interface
+
+vs_core.cms.question_list:
+  path: '/vote'
+  defaults:
+    _controller: '\Drupal\vs_core\Controller\Cms\VotingCmsController::list'
+    _title: 'Vote'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+vs_core.cms.question_detail:
+  path: '/vote/{uuid}'
+  defaults:
+    _controller: '\Drupal\vs_core\Controller\Cms\VotingCmsController::detail'
+    _title: 'Cast your vote'
+  methods: [GET, POST]
+  requirements:
+    _user_is_logged_in: 'TRUE'
+
 # API — Questions
 vs_core.api.questions_list:
   path: '/api/v1/questions'
