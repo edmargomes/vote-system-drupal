@@ -16,11 +16,14 @@
     <testsuite name="Integration">
       <directory>web/modules/custom/vs_core/tests/src/Functional/Api/Integration</directory>
     </testsuite>
+    <testsuite name="Admin">
+      <directory>web/modules/custom/vs_core/tests/src/Functional/Admin</directory>
+    </testsuite>
   </testsuites>
 
   <php>
     <env name="SIMPLETEST_BASE_URL" value="http://voting-system.lndo.site"/>
-    <env name="SIMPLETEST_DB" value="mysql://drupal11:drupal11@database/drupal11"/>
+    <env name="SIMPLETEST_DB" value="sqlite://localhost//tmp/drupal_simpletest.sqlite"/>
     <env name="BROWSERTEST_OUTPUT_DIRECTORY" value="/tmp"/>
     <env name="MINK_DRIVER_ARGS_WEBDRIVER" value='["chrome", {"browserName":"chrome","goog:chromeOptions":{"args":["--disable-gpu","--headless","--no-sandbox"]}},"http://localhost:9515"]'/>
   </php>

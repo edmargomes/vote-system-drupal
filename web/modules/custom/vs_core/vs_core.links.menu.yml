@@ -4,3 +4,16 @@ vs_core.admin.settings:
   route_name: vs_core.admin.settings
   parent: system.admin_config_content
   weight: 10
+
+vs_core.admin.questions_list:
+  title: 'Voting Questions'
+  description: 'Manage voting questions and their options.'
+  route_name: vs_core.admin.questions_list
+  parent: system.admin_content
+  weight: 10
+
+vs_core.admin.question_add:
+  title: 'Add Voting Question'
+  route_name: vs_core.admin.question_add
+  parent: vs_core.admin.questions_list
+  weight: 0

@@ -42,6 +42,84 @@ vs_core.api.admin_results:
   options:
     _auth: ['basic_auth']
 
+# Admin — Questions
+
+vs_core.admin.questions_list:
+  path: '/admin/content/voting-questions'
+  defaults:
+    _controller: '\Drupal\vs_core\Controller\Admin\VotingAdminController::list'
+    _title: 'Voting Questions'
+  methods: [GET]
+  requirements:
+    _permission: 'administer voting'
+
+vs_core.admin.question_add:
+  path: '/admin/content/voting-questions/add'
+  defaults:
+    _form: '\Drupal\vs_core\Form\VotingQuestionForm'
+    _title: 'Add Voting Question'
+  methods: [GET, POST]
+  requirements:
+    _permission: 'administer voting'
+
+vs_core.admin.question_edit:
+  path: '/admin/content/voting-questions/{id}/edit'
+  defaults:
+    _form: '\Drupal\vs_core\Form\VotingQuestionForm'
+    _title: 'Edit Voting Question'
+  methods: [GET, POST]
+  requirements:
+    _permission: 'administer voting'
+
+vs_core.admin.question_delete:
+  path: '/admin/content/voting-questions/{id}/delete'
+  defaults:
+    _form: '\Drupal\vs_core\Form\VotingQuestionDeleteForm'
+    _title: 'Delete Voting Question'
+  methods: [GET, POST]
+  requirements:
+    _permission: 'administer voting'
+
+# Admin — Options
+
+vs_core.admin.option_add:
+  path: '/admin/content/voting-questions/{id}/options/add'
+  defaults:
+    _form: '\Drupal\vs_core\Form\VotingOptionForm'
+    _title: 'Add Voting Option'
+  methods: [GET, POST]
+  requirements:
+    _permission: 'administer voting'
+
+vs_core.admin.option_edit:
+  path: '/admin/content/voting-questions/{id}/options/{oid}/edit'
+  defaults:
+    _form: '\Drupal\vs_core\Form\VotingOptionForm'
+    _title: 'Edit Voting Option'
+  methods: [GET, POST]
+  requirements:
+    _permission: 'administer voting'
+
+vs_core.admin.option_delete:
+  path: '/admin/content/voting-questions/{id}/options/{oid}/delete'
+  defaults:
+    _form: '\Drupal\vs_core\Form\VotingOptionDeleteForm'
+    _title: 'Delete Voting Option'
+  methods: [GET, POST]
+  requirements:
+    _permission: 'administer voting'
+
+# Admin — Votes
+
+vs_core.admin.question_votes:
+  path: '/admin/content/voting-questions/{id}/votes'
+  defaults:
+    _form: '\Drupal\vs_core\Form\VotingBulkDeleteForm'
+    _title: 'Votes'
+  methods: [GET, POST]
+  requirements:
+    _permission: 'administer voting'
+
 # Admin — Settings
 vs_core.admin.settings:
   path: '/admin/config/content/vs-core'

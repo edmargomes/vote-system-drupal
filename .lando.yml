@@ -45,7 +45,7 @@ tooling:
 
   test-functional:
     service: appserver
-    cmd: ./vendor/bin/phpunit --testsuite=Contract,Integration
+    cmd: ./vendor/bin/phpunit --testsuite=Contract,Integration,Admin
 
   coverage:
     service: appserver
