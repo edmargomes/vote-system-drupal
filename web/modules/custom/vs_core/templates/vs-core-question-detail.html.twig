@@ -12,6 +12,7 @@
  * - show_results: Boolean
  * - results: array|null — rows from ResultService::getResults().
  * - form: array — the rendered VotingForm render array; empty when hidden.
+ * - is_closed: Boolean — true when the question's closes_at is in the past.
  */
 #}
 <h1>{{ question_title }}</h1>
@@ -22,7 +23,11 @@
   </div>
 {% endif %}
 
-{% if not voting_enabled %}
+{% if is_closed %}
+  <div class="messages messages--warning vs-core-closed">
+    {{ 'Voting for this question has closed.'|t }}
+  </div>
+{% elseif not voting_enabled %}
   <div class="messages messages--warning">
     {{ 'Voting is currently unavailable.'|t }}
   </div>

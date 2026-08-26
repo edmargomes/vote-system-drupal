@@ -16,7 +16,7 @@ services:
 
   vs_core.question:
     class: Drupal\vs_core\Service\QuestionService
-    arguments: ['@entity_type.manager']
+    arguments: ['@entity_type.manager', '@datetime.time']
 
   vs_core.result:
     class: Drupal\vs_core\Service\ResultService

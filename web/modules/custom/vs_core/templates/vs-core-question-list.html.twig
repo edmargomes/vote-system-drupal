@@ -6,11 +6,14 @@
  * Available variables:
  * - voting_enabled: Boolean — when false, a notice is shown above the list.
  * - is_anonymous: Boolean — when true, a login/register CTA banner is shown.
+ *   This will never be true since the route requires login, but is kept for
+ *   defensive rendering in case routing rules change.
  * - questions: Array of items, each containing:
  *   - uuid: string
  *   - title: string
  *   - description: string|null
  *   - url: \Drupal\Core\Url — link to the question detail page.
+ *   - has_voted: bool — true when the current user has already voted.
  */
 #}
 {% if not voting_enabled %}
@@ -35,6 +38,9 @@
     {% for question in questions %}
       <li class="vs-core-question-list__item">
         <a href="{{ question.url }}">{{ question.title }}</a>
+        {% if question.has_voted %}
+          <span class="vs-core-badge vs-core-badge--voted">{{ 'Voted'|t }}</span>
+        {% endif %}
         {% if question.description %}
           <p>{{ question.description }}</p>
         {% endif %}

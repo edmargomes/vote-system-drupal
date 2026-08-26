@@ -54,14 +54,16 @@ class VotingCmsController extends ControllerBase {
   /**
    * Renders the public list of active voting questions.
    *
-   * Any visitor (authenticated or anonymous) may access this page.
+   * Requires the user to be authenticated (enforced at the route level via
+   * _user_is_logged_in: TRUE). Each question item carries a has_voted flag
+   * so the template can render a "Voted" badge without additional queries.
    *
    * @return array<string, mixed>
    *   A render array using the vs_core_question_list theme hook.
    */
   public function list(): array {
     $votingEnabled = $this->votingService->isVotingEnabled();
-    $isAnonymous = $this->currentUser()->isAnonymous();
+    $currentUser = $this->currentUser();
 
     $questions = $this->questionService->listActive();
 
@@ -76,13 +78,15 @@ class VotingCmsController extends ControllerBase {
           'vs_core.cms.question_detail',
           ['uuid' => $question->uuid()],
         ),
+        'has_voted' => !$currentUser->isAnonymous()
+        && $this->votingService->hasVoted($currentUser, $question),
       ];
     }
 
     return [
       '#theme' => 'vs_core_question_list',
       '#voting_enabled' => $votingEnabled,
-      '#is_anonymous' => $isAnonymous,
+      '#is_anonymous' => $currentUser->isAnonymous(),
       '#questions' => $questionItems,
     ];
   }
@@ -94,6 +98,10 @@ class VotingCmsController extends ControllerBase {
    * so this method only handles authenticated users. Logged-in users without
    * the 'vote' permission see the question info but not the form.
    *
+   * When the question has a closes_at timestamp in the past, the form is
+   * suppressed and is_closed is set to TRUE so the template can render an
+   * appropriate message.
+   *
    * @param string $uuid
    *   The question UUID from the route.
    *
@@ -101,7 +109,7 @@ class VotingCmsController extends ControllerBase {
    *   A render array using the vs_core_question_detail theme hook.
    *
    * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
-   *   When the question UUID does not match any active question.
+   *   When the question UUID does not match any question.
    */
   public function detail(string $uuid): array {
     $question = $this->questionService->findByUuid($uuid);
@@ -113,13 +121,14 @@ class VotingCmsController extends ControllerBase {
     $votingEnabled = $this->votingService->isVotingEnabled();
     $currentUser = $this->currentUser();
     $showResults = (bool) $question->get('show_results')->value;
+    $isClosed = !$this->questionService->isOpen($question);
 
     $alreadyVoted = FALSE;
     $votedOptionLabel = NULL;
     $form = [];
     $results = NULL;
 
-    if ($votingEnabled) {
+    if ($votingEnabled && !$isClosed) {
       $alreadyVoted = $this->votingService->hasVoted($currentUser, $question);
 
       if ($alreadyVoted) {
@@ -145,6 +154,7 @@ class VotingCmsController extends ControllerBase {
       '#show_results' => $showResults,
       '#results' => $results,
       '#form' => $form,
+      '#is_closed' => $isClosed,
     ];
   }
 

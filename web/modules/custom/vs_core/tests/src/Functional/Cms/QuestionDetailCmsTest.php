@@ -280,4 +280,45 @@ class QuestionDetailCmsTest extends BrowserTestBase {
     $this->assertSame(0, $count);
   }
 
+  /**
+   * Closed question shows a "closed" message instead of the voting form.
+   */
+  public function testClosedQuestionShowsClosedMessage(): void {
+    $entityTypeManager = $this->container->get('entity_type.manager');
+
+    $question = $entityTypeManager->getStorage('voting_question')->create([
+      'title' => 'Already Closed Question',
+      'status' => TRUE,
+      'show_results' => FALSE,
+      'closes_at' => time() - 3600,
+    ]);
+    $question->save();
+
+    $option = $entityTypeManager->getStorage('voting_option')->create([
+      'label' => 'Late option',
+      'question_id' => $question->id(),
+    ]);
+    $option->save();
+
+    $user = $this->drupalCreateUser(['vote']);
+    $this->drupalLogin($user);
+
+    $this->drupalGet('/vote/' . $question->uuid());
+    $this->assertSession()->pageTextContains('closed');
+    $this->assertSession()->fieldNotExists('option_uuid');
+  }
+
+  /**
+   * Open question still shows the voting form — no regression from Feature 4.
+   */
+  public function testOpenQuestionStillShowsForm(): void {
+    [$question] = $this->createQuestionWithOption();
+
+    $user = $this->drupalCreateUser(['vote']);
+    $this->drupalLogin($user);
+
+    $this->drupalGet('/vote/' . $question->uuid());
+    $this->assertSession()->fieldExists('option_uuid');
+  }
+
 }

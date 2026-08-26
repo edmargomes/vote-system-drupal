@@ -14,7 +14,8 @@ class VsCoreHooks {
   /**
    * Implements hook_theme().
    *
-   * Registers the two Twig theme hooks used by the CMS voting interface.
+   * Registers the Twig theme hooks used by the CMS voting interface and the
+   * admin results page.
    *
    * @return array<string, array<string, mixed>>
    *   An array of theme hook definitions keyed by hook name.
@@ -40,8 +41,18 @@ class VsCoreHooks {
           'show_results' => FALSE,
           'results' => NULL,
           'form' => [],
+          'is_closed' => FALSE,
         ],
         'template' => 'vs-core-question-detail',
+      ],
+      'vs_core_admin_results' => [
+        'variables' => [
+          'question_title' => '',
+          'total_votes' => 0,
+          'results' => [],
+          'back_url' => NULL,
+        ],
+        'template' => 'vs-core-admin-results',
       ],
     ];
   }

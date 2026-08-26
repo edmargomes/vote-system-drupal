@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\vs_core\Service;
 
+use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\vs_core\Entity\VotingOptionInterface;
 use Drupal\vs_core\Entity\VotingQuestionInterface;
@@ -18,9 +19,13 @@ class QuestionService {
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
+   * @param \Drupal\Component\Datetime\TimeInterface $time
+   *   The time service, used to evaluate question expiry without coupling to
+   *   the global clock.
    */
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
+    private readonly TimeInterface $time,
   ) {}
 
   /**
@@ -43,19 +48,58 @@ class QuestionService {
   }
 
   /**
-   * Returns all active (status = 1) voting questions.
+   * Returns all active and non-expired voting questions.
+   *
+   * A question is included when status = 1 AND (closes_at IS NULL OR
+   * closes_at > REQUEST_TIME). The entity query API is used so that Drupal's
+   * access layer is respected and the result is testable via Kernel tests.
    *
    * @return \Drupal\vs_core\Entity\VotingQuestionInterface[]
-   *   Array of active question entities.
+   *   Array of open question entities.
    */
   public function listActive(): array {
-    $results = $this->entityTypeManager
-      ->getStorage('voting_question')
-      ->loadByProperties(['status' => 1]);
+    $now = $this->time->getRequestTime();
+    $storage = $this->entityTypeManager->getStorage('voting_question');
+
+    $ids = $storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('status', 1)
+      ->condition(
+        $storage->getQuery()->orConditionGroup()
+          ->notExists('closes_at')
+          ->condition('closes_at', $now, '>')
+      )
+      ->execute();
+
+    $entities = $storage->loadMultiple($ids);
 
     return array_values(
-      array_filter($results, static fn($e) => $e instanceof VotingQuestionInterface)
+      array_filter($entities, static fn($e) => $e instanceof VotingQuestionInterface)
     );
+  }
+
+  /**
+   * Returns whether a given question is currently open for voting.
+   *
+   * Delegates to the entity method to keep the logic in one canonical place.
+   *
+   * @param \Drupal\vs_core\Entity\VotingQuestionInterface $question
+   *   The question to check.
+   *
+   * @return bool
+   *   TRUE when the question is active and not yet expired.
+   */
+  public function isOpen(VotingQuestionInterface $question): bool {
+    if (!(bool) $question->get('status')->value) {
+      return FALSE;
+    }
+
+    $closesAt = $question->get('closes_at')->value;
+    if ($closesAt === NULL) {
+      return TRUE;
+    }
+
+    return (int) $closesAt > $this->time->getRequestTime();
   }
 
   /**
@@ -65,12 +109,18 @@ class QuestionService {
    *   The parent question.
    *
    * @return \Drupal\vs_core\Entity\VotingOptionInterface[]
-   *   Array of option entities.
+   *   Array of option entities ordered by weight ascending.
    */
   public function getOptions(VotingQuestionInterface $question): array {
-    $results = $this->entityTypeManager
-      ->getStorage('voting_option')
-      ->loadByProperties(['question_id' => $question->id()]);
+    $storage = $this->entityTypeManager->getStorage('voting_option');
+
+    $ids = $storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('question_id', $question->id())
+      ->sort('weight', 'ASC')
+      ->execute();
+
+    $results = $storage->loadMultiple($ids);
 
     return array_values(
       array_filter($results, static fn($e) => $e instanceof VotingOptionInterface)

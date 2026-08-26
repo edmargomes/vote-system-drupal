@@ -7,7 +7,7 @@ vs_core.cms.question_list:
     _title: 'Vote'
   methods: [GET]
   requirements:
-    _access: 'TRUE'
+    _user_is_logged_in: 'TRUE'
 
 vs_core.cms.question_detail:
   path: '/vote/{uuid}'
@@ -97,6 +97,15 @@ vs_core.admin.question_delete:
     _form: '\Drupal\vs_core\Form\VotingQuestionDeleteForm'
     _title: 'Delete Voting Question'
   methods: [GET, POST]
+  requirements:
+    _permission: 'administer voting'
+
+vs_core.admin.question_results:
+  path: '/admin/content/voting-questions/{id}/results'
+  defaults:
+    _controller: '\Drupal\vs_core\Controller\Admin\VotingAdminController::results'
+    _title: 'Results'
+  methods: [GET]
   requirements:
     _permission: 'administer voting'
 
