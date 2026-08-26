@@ -425,7 +425,11 @@ class VotingQuestionForm extends FormBase {
     $optionRows = $form_state->get('options_rows') ?? [];
     // The fieldset uses #tree => FALSE (Drupal default), so submitted values
     // are NOT nested under 'options_section' — read from the top level.
-    $tableRows = $form_state->getValue('options_table') ?? [];
+    $rawTable = $form_state->getValue('options_table');
+    // #type => 'table' has #input => TRUE, so FormBuilder sets the value to ''
+    // (not NULL) when the table is absent from POST. The ?? [] fallback does
+    // not trigger on '', so we guard explicitly with is_array().
+    $tableRows = is_array($rawTable) ? $rawTable : [];
 
     // Merge weight and label from the submitted table values back into rows.
     foreach ($tableRows as $delta => $tableRow) {

@@ -17,7 +17,7 @@ class VotingLocalTaskTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['vs_core', 'node'];
+  protected static $modules = ['vs_core', 'node', 'block'];
 
   /**
    * {@inheritdoc}
