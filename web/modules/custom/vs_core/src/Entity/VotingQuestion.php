@@ -30,6 +30,22 @@ class VotingQuestion extends ContentEntityBase implements VotingQuestionInterfac
   /**
    * {@inheritdoc}
    */
+  public function isOpen(): bool {
+    if (!(bool) $this->get('status')->value) {
+      return FALSE;
+    }
+
+    $closesAt = $this->get('closes_at')->value;
+    if ($closesAt === NULL) {
+      return TRUE;
+    }
+
+    return (int) $closesAt > \Drupal::time()->getRequestTime();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type): array {
     $fields = parent::baseFieldDefinitions($entity_type);
 
@@ -57,6 +73,13 @@ class VotingQuestion extends ContentEntityBase implements VotingQuestionInterfac
       ->setRequired(TRUE)
       ->setSetting('target_type', 'user')
       ->setDefaultValueCallback('vs_core_voting_question_uid_default');
+
+    // Timestamp storage is used (consistent with 'created'/'changed') to avoid
+    // timezone conversion complexity and to allow simple integer comparisons in
+    // entity queries for the "is question open?" check.
+    $fields['closes_at'] = BaseFieldDefinition::create('timestamp')
+      ->setLabel(new TranslatableMarkup('Closes at'))
+      ->setRequired(FALSE);
 
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(new TranslatableMarkup('Created'));

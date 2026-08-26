@@ -47,3 +47,18 @@ function vs_core_update_10001(): void {
     ->set('page.front', '/vote')
     ->save(TRUE);
 }
+
+/**
+ * Adds the closes_at column to voting_question for question expiry support.
+ */
+function vs_core_update_10002(): void {
+  $spec = [
+    'type' => 'int',
+    'size' => 'normal',
+    'unsigned' => TRUE,
+    'not null' => FALSE,
+    'default' => NULL,
+    'description' => 'Unix timestamp when the question closes. NULL means no expiry.',
+  ];
+  \Drupal::database()->schema()->addField('voting_question', 'closes_at', $spec);
+}
