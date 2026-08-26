@@ -37,6 +37,8 @@ class VotingLocalTaskTest extends BrowserTestBase {
       'access content overview',
     ]);
     $this->drupalLogin($admin);
+    // Local task tabs are only rendered when local_tasks_block is placed.
+    $this->drupalPlaceBlock('local_tasks_block');
 
     $this->drupalGet('/admin/content');
     $this->assertSession()->statusCodeEquals(200);
@@ -56,6 +58,10 @@ class VotingLocalTaskTest extends BrowserTestBase {
       'access content overview',
     ]);
     $this->drupalLogin($user);
+    // Place the block so the negative assertion is meaningful — without it the
+    // block is absent and linkNotExists would pass trivially for the wrong
+    // reason.
+    $this->drupalPlaceBlock('local_tasks_block');
 
     $this->drupalGet('/admin/content');
     $this->assertSession()->linkNotExists('Voting Questions');

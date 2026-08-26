@@ -22,6 +22,12 @@ services:
     class: Drupal\vs_core\Service\ResultService
     arguments: ['@database', '@entity_type.manager']
 
+  vs_core.anonymous_redirect_subscriber:
+    class: Drupal\vs_core\EventSubscriber\AnonymousRedirectSubscriber
+    arguments: ['@current_user']
+    tags:
+      - { name: event_subscriber }
+
   vs_core.request_subscriber:
     class: Drupal\vs_core\EventSubscriber\VotingRequestSubscriber
     arguments: ['@vs_core.logger']

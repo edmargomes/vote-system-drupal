@@ -11,19 +11,19 @@ const OPTION_UUID   = __ENV.OPTION_UUID;
 export const options = {
   stages: [
     // Smoke — catches mis-configuration early at near-zero cost.
-    { duration: '10s', target: 1   },
+    { duration: '10s', target: 1    },
 
     // Ramp-up.
-    { duration: '30s', target: 20  },
+    { duration: '1m',  target: 200  },
 
     // Hold at medium load.
-    { duration: '1m',  target: 50  },
+    { duration: '2m',  target: 1000 },
 
-    // Spike — all 100 VUs hit the vote endpoint concurrently.
-    { duration: '30s', target: 100 },
+    // Spike — 2000 VUs hit the vote endpoint concurrently.
+    { duration: '1m',  target: 2000 },
 
     // Ramp-down.
-    { duration: '30s', target: 0   },
+    { duration: '1m',  target: 0    },
   ],
   thresholds: {
     // 95th-percentile response time under 500 ms across all requests.
