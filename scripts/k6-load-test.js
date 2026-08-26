@@ -1,6 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate } from 'k6/metrics';
+import encoding from 'k6/encoding';
 
 const errorRate = new Rate('errors');
 
@@ -48,7 +49,7 @@ export default function () {
   // iterates more than once — which is the correct duplicate-vote case.
   const username    = `loadtest_user_${__VU}`;
   const password    = 'loadtest_pass';
-  const credentials = btoa(`${username}:${password}`);
+  const credentials = encoding.b64encode(`${username}:${password}`);
 
   const headers = {
     'Authorization': `Basic ${credentials}`,

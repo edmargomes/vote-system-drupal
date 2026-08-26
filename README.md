@@ -14,6 +14,16 @@ That's it. The command starts Lando, creates your `.env` (with a generated hash 
 
 **Requires:** [Lando](https://lando.dev/)
 
+### Load-test database
+
+`dump/2000-users.sql` is an alternative database snapshot that includes 2 000 pre-created users (`loadtest_user_1` … `loadtest_user_2000`, password `loadtest_pass`) ready for load testing or manual API exploration. Import it instead of the default dump when you need those accounts:
+
+```bash
+lando db-import dump/2000-users.sql
+```
+
+See [Load Testing](https://github.com/edmargomes/vote-system-drupal/wiki/Developer-Load-Testing) for the full k6 test instructions.
+
 ## Tests
 
 All 142 tests pass. The full suite takes ~40 minutes (Contract and Admin suites boot a full Drupal install).
