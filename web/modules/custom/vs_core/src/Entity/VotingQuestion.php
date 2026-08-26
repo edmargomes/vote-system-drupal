@@ -29,6 +29,12 @@ class VotingQuestion extends ContentEntityBase implements VotingQuestionInterfac
 
   /**
    * {@inheritdoc}
+   *
+   * Uses PHP's time() instead of the Drupal time service because
+   * ContentEntityBase has no constructor-injection mechanism, making it
+   * impossible to inject TimeInterface without a static call. For test-accurate
+   * expiry checks, use QuestionService::isOpen(), which receives TimeInterface
+   * via dependency injection.
    */
   public function isOpen(): bool {
     if (!(bool) $this->get('status')->value) {
@@ -40,7 +46,7 @@ class VotingQuestion extends ContentEntityBase implements VotingQuestionInterfac
       return TRUE;
     }
 
-    return (int) $closesAt > \Drupal::time()->getRequestTime();
+    return (int) $closesAt > time();
   }
 
   /**

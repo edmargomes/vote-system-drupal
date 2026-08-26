@@ -81,7 +81,9 @@ class QuestionService {
   /**
    * Returns whether a given question is currently open for voting.
    *
-   * Delegates to the entity method to keep the logic in one canonical place.
+   * A question is open when status = 1 AND (closes_at IS NULL OR
+   * closes_at > REQUEST_TIME). Uses the injected TimeInterface so this
+   * check is reproducible in Kernel tests without real-clock drift.
    *
    * @param \Drupal\vs_core\Entity\VotingQuestionInterface $question
    *   The question to check.

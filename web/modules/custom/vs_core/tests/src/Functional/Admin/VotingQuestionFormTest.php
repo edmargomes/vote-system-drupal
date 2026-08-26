@@ -394,4 +394,50 @@ class VotingQuestionFormTest extends BrowserTestBase {
     $this->assertCount(1, $options);
   }
 
+  /**
+   * Removing an option with existing votes is blocked; entity remains intact.
+   *
+   * The AJAX remove callback checks for votes before deleting. When votes
+   * exist, it adds an error message and aborts so data integrity is preserved.
+   */
+  public function testRemoveOptionWithVotesIsBlockedAndOptionStillExists(): void {
+    $admin = $this->drupalCreateUser(['administer voting']);
+    $this->drupalLogin($admin);
+
+    $qStorage = \Drupal::entityTypeManager()->getStorage('voting_question');
+    $question = $qStorage->create(['title' => 'Deletion Guard Test', 'status' => 1]);
+    $question->save();
+
+    $oStorage = \Drupal::entityTypeManager()->getStorage('voting_option');
+    $option = $oStorage->create([
+      'label' => 'Option with votes',
+      'question_id' => $question->id(),
+    ]);
+    $option->save();
+
+    // Insert a vote directly so the guard triggers without a full vote flow.
+    \Drupal::database()->insert('voting_vote')
+      ->fields([
+        'uuid' => \Drupal::service('uuid')->generate(),
+        'uid' => $admin->id(),
+        'question_id' => $question->id(),
+        'option_id' => $option->id(),
+        'source' => 'cms',
+        'created' => time(),
+      ])
+      ->execute();
+
+    // Trigger the remove AJAX button. BrowserTestBase resolves the AJAX
+    // callback synchronously via drupalGet + the button name.
+    $this->drupalGet('/admin/content/voting-questions/' . $question->id() . '/edit');
+    $this->getSession()->getPage()->pressButton('Remove');
+
+    // The error message must be displayed.
+    $this->assertSession()->pageTextContains('cannot be deleted because it has existing votes');
+
+    // The option entity must still exist in the database.
+    $oStorage->resetCache();
+    $this->assertNotNull($oStorage->load($option->id()));
+  }
+
 }
