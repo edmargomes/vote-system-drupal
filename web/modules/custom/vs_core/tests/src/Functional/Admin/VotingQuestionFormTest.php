@@ -378,9 +378,12 @@ class VotingQuestionFormTest extends BrowserTestBase {
     $entity = $storage->create(['title' => 'Inline Option Test', 'status' => 1]);
     $entity->save();
 
+    // Click "Add option" — BrowserTestBase resolves the non-JS submit fallback
+    // synchronously, so the form rebuilds and the new row is available in the
+    // next response without any WebDriver / waitForElement().
     $this->drupalGet('/admin/content/voting-questions/' . $entity->id() . '/edit');
     $this->getSession()->getPage()->pressButton('Add option');
-    $this->assertSession()->waitForElement('css', '[name="options_table[0][label]"]');
+    $this->assertSession()->fieldExists('options_table[0][label]');
 
     $this->submitForm([
       'options_table[0][label]' => 'My Inline Option',

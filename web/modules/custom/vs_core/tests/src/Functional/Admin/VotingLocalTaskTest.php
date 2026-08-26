@@ -34,7 +34,7 @@ class VotingLocalTaskTest extends BrowserTestBase {
     $admin = $this->drupalCreateUser([
       'administer voting',
       'access administration pages',
-      'administer content types',
+      'access content overview',
     ]);
     $this->drupalLogin($admin);
 
@@ -50,10 +50,10 @@ class VotingLocalTaskTest extends BrowserTestBase {
    * tab's route, so a user without 'administer voting' must not see the tab.
    */
   public function testVotingQuestionsTabHiddenWithoutPermission(): void {
-    // 'access administration pages' alone does not grant administer voting.
+    // 'access content overview' alone does not grant administer voting.
     $user = $this->drupalCreateUser([
       'access administration pages',
-      'administer content types',
+      'access content overview',
     ]);
     $this->drupalLogin($user);
 
