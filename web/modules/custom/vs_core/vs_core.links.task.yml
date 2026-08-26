@@ -1,0 +1,13 @@
+# Local task tabs for the vs_core module.
+#
+# The "Voting Questions" tab appears on /admin/content alongside Drupal core's
+# own tabs (e.g. "Content"). It is only visible to users who have access to the
+# vs_core.admin.questions_list route, which requires 'administer voting'.
+# Standard authenticated users visiting /admin/content will NOT see this tab —
+# this is correct behaviour and not a bug.
+
+vs_core.admin.questions_list.task:
+  title: 'Voting Questions'
+  route_name: vs_core.admin.questions_list
+  base_route: system.admin_content
+  weight: 10
