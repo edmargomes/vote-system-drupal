@@ -1,0 +1,46 @@
+{#
+/**
+ * @file
+ * Template for the admin voting question results page.
+ *
+ * Available variables:
+ * - question_title: string — the question's title.
+ * - total_votes: int — total number of votes cast.
+ * - results: array — rows from ResultService::getResults(), each containing:
+ *   - title: string
+ *   - votes: int
+ *   - percentage: float
+ * - back_url: \Drupal\Core\Url — link back to the question listing.
+ */
+#}
+<h1>{{ question_title }}</h1>
+<p>{{ 'Total votes: %count'|t({'%count': total_votes}) }}</p>
+
+{% if results is empty %}
+  <p>{{ 'No votes have been cast yet.'|t }}</p>
+{% else %}
+  <table class="vs-core-results-table">
+    <thead>
+      <tr>
+        <th>{{ 'Option'|t }}</th>
+        <th>{{ 'Votes'|t }}</th>
+        <th>{{ 'Percentage'|t }}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in results %}
+        <tr>
+          <td>{{ row.title }}</td>
+          <td>{{ row.votes }}</td>
+          <td>{{ row.percentage }}%</td>
+          <td>
+            <div class="vs-core-bar" style="width: {{ row.percentage }}%; background: #0074bd; height: 12px;"></div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+
+<p><a href="{{ back_url }}">{{ 'Back to questions'|t }}</a></p>
