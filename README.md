@@ -7,12 +7,14 @@ A custom Drupal 11 module implementing a poll/voting system with a manually buil
 ```bash
 git clone <repo-url>
 cd vote-system-drupal
-lando setup-project
+bash scripts/setup.sh
 ```
 
-That's it. The command starts Lando, creates your `.env` (with a generated hash salt), installs PHP dependencies, imports the initial database, and runs `drush deploy`. At the end it prints the site URL and a one-time admin login link.
+That's it. The script starts Lando, creates your `.env` (with a generated hash salt), installs PHP dependencies, imports the initial database, and runs `drush deploy`. At the end it prints the site URL and a one-time admin login link.
 
 **Requires:** [Lando](https://lando.dev/)
+
+> **Why not `lando setup-project`?** Lando tooling commands require the Lando runtime to be running first — meaning you can't use them to start Lando itself. Run `bash scripts/setup.sh` directly from your terminal instead.
 
 ### Load-test database
 
