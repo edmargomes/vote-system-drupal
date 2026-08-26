@@ -76,3 +76,22 @@ tooling:
     service: host
     cmd: bash scripts/setup.sh
     description: First-time setup — creates .env, starts Lando, imports DB, and runs drush deploy
+
+  load-test:
+    service: host
+    description: >
+      Run k6 load test via Docker. Requires BASE_URL, QUESTION_UUID, and
+      OPTION_UUID to be exported in the shell. Runs with the web dashboard
+      on http://localhost:5665 and exports scripts/load-test-report.html.
+    cmd: >
+      docker run --rm -i
+      --network host
+      -e K6_WEB_DASHBOARD=true
+      -e K6_WEB_DASHBOARD_OPEN=true
+      -e K6_WEB_DASHBOARD_PORT=5665
+      -e K6_WEB_DASHBOARD_EXPORT=/scripts/load-test-report.html
+      -e BASE_URL=$BASE_URL
+      -e QUESTION_UUID=$QUESTION_UUID
+      -e OPTION_UUID=$OPTION_UUID
+      -v $PWD/scripts:/scripts
+      grafana/k6 run /scripts/k6-load-test.js

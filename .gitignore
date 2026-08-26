@@ -21,6 +21,9 @@
 # GrumPHP cache
 .grumphp.yml.cache
 
+# k6 load test — generated artefact
+/scripts/load-test-report.html
+
 # GitHub wiki (separate git repo)
 /wiki/
 
