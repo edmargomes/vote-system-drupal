@@ -96,17 +96,25 @@ class VotingAdminController extends ControllerBase {
     }
 
     return [
-      '#type' => 'table',
-      '#header' => [
-        $this->t('Title'),
-        $this->t('Status'),
-        $this->t('Options'),
-        $this->t('Show Results'),
-        $this->t('Created'),
-        $this->t('Actions'),
+      'add_link' => [
+        '#type' => 'link',
+        '#title' => $this->t('Add voting question'),
+        '#url' => Url::fromRoute('vs_core.admin.question_add'),
+        '#attributes' => ['class' => ['button', 'button--primary', 'button--action']],
       ],
-      '#rows' => $rows,
-      '#empty' => $this->t('No voting questions found.'),
+      'table' => [
+        '#type' => 'table',
+        '#header' => [
+          $this->t('Title'),
+          $this->t('Status'),
+          $this->t('Options'),
+          $this->t('Show Results'),
+          $this->t('Created'),
+          $this->t('Actions'),
+        ],
+        '#rows' => $rows,
+        '#empty' => $this->t('No voting questions found.'),
+      ],
     ];
   }
 

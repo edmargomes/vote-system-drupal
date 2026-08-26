@@ -55,6 +55,17 @@ class VotingQuestionFormTest extends BrowserTestBase {
   }
 
   /**
+   * The list page renders a link to the add-question form.
+   */
+  public function testListPageHasAddQuestionLink(): void {
+    $admin = $this->drupalCreateUser(['administer voting']);
+    $this->drupalLogin($admin);
+
+    $this->drupalGet('/admin/content/voting-questions');
+    $this->assertSession()->linkByHrefExists('/admin/content/voting-questions/add');
+  }
+
+  /**
    * Anonymous user cannot access the add form.
    */
   public function testAnonymousCannotAccessAddForm(): void {
