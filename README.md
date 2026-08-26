@@ -1,6 +1,6 @@
 # voting_system — Drupal 11 Voting Module
 
-A custom Drupal 11 module implementing a poll/voting system with a manually built REST API, custom token authentication, and single-vote enforcement via a database unique constraint.
+A custom Drupal 11 module implementing a poll/voting system with a manually built REST API, HTTP Basic Authentication, and single-vote enforcement via a database unique constraint.
 
 ## Quick Start
 
