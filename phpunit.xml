@@ -21,6 +21,12 @@
     </testsuite>
   </testsuites>
 
+  <coverage>
+    <include>
+      <directory suffix=".php">web/modules/custom/vs_core/src</directory>
+    </include>
+  </coverage>
+
   <php>
     <env name="SIMPLETEST_BASE_URL" value="http://voting-system.lndo.site"/>
     <env name="SIMPLETEST_DB" value="sqlite://localhost//tmp/drupal_simpletest.sqlite"/>
