@@ -72,11 +72,6 @@ tooling:
     service: appserver
     cmd: ./vendor/bin/drush
 
-  setup-project:
-    service: host
-    cmd: bash scripts/setup.sh
-    description: First-time setup — creates .env, starts Lando, imports DB, and runs drush deploy
-
   load-test:
     service: host
     description: >
