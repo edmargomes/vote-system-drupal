@@ -21,11 +21,11 @@
     </testsuite>
   </testsuites>
 
-  <coverage>
+  <source>
     <include>
       <directory suffix=".php">web/modules/custom/vs_core/src</directory>
     </include>
-  </coverage>
+  </source>
 
   <php>
     <env name="SIMPLETEST_BASE_URL" value="http://voting-system.lndo.site"/>

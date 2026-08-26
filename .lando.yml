@@ -8,9 +8,10 @@ config:
 
 services:
   appserver:
+    xdebug: true
     overrides:
       environment:
-        XDEBUG_MODE: coverage
+        XDEBUG_MODE: "off"
 
   # Serves the HTML coverage report
   coverage:
@@ -49,11 +50,11 @@ tooling:
 
   coverage:
     service: appserver
-    cmd: ./vendor/bin/phpunit --coverage-html coverage/html --coverage-clover coverage/clover.xml --coverage-text
+    cmd: env XDEBUG_MODE=coverage ./vendor/bin/phpunit --coverage-html coverage/html --coverage-clover coverage/clover.xml --coverage-text
 
   coverage-unit:
     service: appserver
-    cmd: ./vendor/bin/phpunit --testsuite=Unit --coverage-html coverage/html --coverage-text
+    cmd: env XDEBUG_MODE=coverage ./vendor/bin/phpunit --testsuite=Unit --coverage-html coverage/html --coverage-text
 
   phpcs:
     service: appserver
