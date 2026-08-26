@@ -62,3 +62,17 @@ function vs_core_update_10002(): void {
   ];
   \Drupal::database()->schema()->addField('voting_question', 'closes_at', $spec);
 }
+
+/**
+ * Enables user self-registration with admin approval.
+ *
+ * Switches from admin_only to visitors_admin_approval so users can register
+ * independently while an admin retains the ability to approve accounts before
+ * they can log in. This also restores the registration tab on /user/login.
+ */
+function vs_core_update_10003(): void {
+  \Drupal::configFactory()
+    ->getEditable('user.settings')
+    ->set('register', 'visitors_admin_approval')
+    ->save();
+}

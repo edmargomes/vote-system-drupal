@@ -58,7 +58,7 @@ class AnonymousRedirectSubscriberTest extends UnitTestCase {
     $events = AnonymousRedirectSubscriber::getSubscribedEvents();
 
     $this->assertArrayHasKey(KernelEvents::REQUEST, $events);
-    $this->assertSame(['onKernelRequest', 30], $events[KernelEvents::REQUEST]);
+    $this->assertSame(['onKernelRequest', 100], $events[KernelEvents::REQUEST]);
   }
 
   /**

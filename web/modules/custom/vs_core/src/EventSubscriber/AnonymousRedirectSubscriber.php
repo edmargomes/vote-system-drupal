@@ -13,10 +13,10 @@ use Symfony\Component\HttpKernel\KernelEvents;
 /**
  * Redirects unauthenticated visitors to the login page.
  *
- * Fires on kernel.request with priority 30, after Drupal's RouterListener
- * (priority 32) so that path info is fully resolved, and before
- * VotingRequestSubscriber (priority 20) to avoid unnecessary correlation-ID
- * work for requests that will be redirected.
+ * Fires on kernel.request with priority 100, before Drupal's RouterListener
+ * (priority 32), so the redirect fires before access checking runs.
+ * getPathInfo() is available on the Request object regardless of routing
+ * state — no router resolution is required to evaluate the excluded prefixes.
  *
  * Paths starting with any of the excluded prefixes are never redirected so
  * that machine clients, Drupal system paths, and the login flow itself remain
@@ -55,7 +55,7 @@ class AnonymousRedirectSubscriber implements EventSubscriberInterface {
    */
   public static function getSubscribedEvents(): array {
     return [
-      KernelEvents::REQUEST => ['onKernelRequest', 30],
+      KernelEvents::REQUEST => ['onKernelRequest', 100],
     ];
   }
 
