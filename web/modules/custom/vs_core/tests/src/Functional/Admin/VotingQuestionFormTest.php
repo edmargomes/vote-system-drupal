@@ -291,4 +291,107 @@ class VotingQuestionFormTest extends BrowserTestBase {
     $this->assertSession()->statusCodeEquals(404);
   }
 
+  /**
+   * Edit form renders the closes_at date/time field.
+   */
+  public function testEditFormRendersClosesAtField(): void {
+    $admin = $this->drupalCreateUser(['administer voting']);
+    $this->drupalLogin($admin);
+
+    $storage = \Drupal::entityTypeManager()->getStorage('voting_question');
+    $entity = $storage->create(['title' => 'Expiry Field Test', 'status' => 1]);
+    $entity->save();
+
+    $this->drupalGet('/admin/content/voting-questions/' . $entity->id() . '/edit');
+    $this->assertSession()->fieldExists('closes_at[date]');
+  }
+
+  /**
+   * Saving the form with a closes_at value persists the timestamp.
+   */
+  public function testSavingClosesAtPersistsTimestamp(): void {
+    $admin = $this->drupalCreateUser(['administer voting']);
+    $this->drupalLogin($admin);
+
+    $storage = \Drupal::entityTypeManager()->getStorage('voting_question');
+    $entity = $storage->create(['title' => 'Closes At Persist Test', 'status' => 1]);
+    $entity->save();
+
+    $this->drupalGet('/admin/content/voting-questions/' . $entity->id() . '/edit');
+    $this->submitForm([
+      'title' => 'Closes At Persist Test',
+      'closes_at[date]' => '2030-12-31',
+      'closes_at[time]' => '23:59:00',
+    ], 'Save');
+
+    $storage->resetCache();
+    $updated = $storage->load($entity->id());
+    $this->assertNotNull($updated->get('closes_at')->value);
+  }
+
+  /**
+   * Saving the form without closes_at persists NULL.
+   */
+  public function testSavingWithoutClosesAtPersistsNull(): void {
+    $admin = $this->drupalCreateUser(['administer voting']);
+    $this->drupalLogin($admin);
+
+    $storage = \Drupal::entityTypeManager()->getStorage('voting_question');
+    $entity = $storage->create(['title' => 'No Expiry Test', 'status' => 1]);
+    $entity->save();
+
+    $this->drupalGet('/admin/content/voting-questions/' . $entity->id() . '/edit');
+    $this->submitForm([
+      'title' => 'No Expiry Test',
+      'closes_at[date]' => '',
+      'closes_at[time]' => '',
+    ], 'Save');
+
+    $storage->resetCache();
+    $updated = $storage->load($entity->id());
+    $this->assertNull($updated->get('closes_at')->value);
+  }
+
+  /**
+   * Edit form renders the options sub-form section.
+   */
+  public function testEditFormRendersOptionsSection(): void {
+    $admin = $this->drupalCreateUser(['administer voting']);
+    $this->drupalLogin($admin);
+
+    $storage = \Drupal::entityTypeManager()->getStorage('voting_question');
+    $entity = $storage->create(['title' => 'Options Section Test', 'status' => 1]);
+    $entity->save();
+
+    $this->drupalGet('/admin/content/voting-questions/' . $entity->id() . '/edit');
+    $this->assertSession()->pageTextContains('Options');
+  }
+
+  /**
+   * Adding an option inline saves it linked to the question.
+   */
+  public function testAddingOptionInlineSavesItLinkedToQuestion(): void {
+    $admin = $this->drupalCreateUser(['administer voting']);
+    $this->drupalLogin($admin);
+
+    $storage = \Drupal::entityTypeManager()->getStorage('voting_question');
+    $entity = $storage->create(['title' => 'Inline Option Test', 'status' => 1]);
+    $entity->save();
+
+    $this->drupalGet('/admin/content/voting-questions/' . $entity->id() . '/edit');
+    $this->getSession()->getPage()->pressButton('Add option');
+    $this->assertSession()->waitForElement('css', '[name="options_table[0][label]"]');
+
+    $this->submitForm([
+      'options_table[0][label]' => 'My Inline Option',
+    ], 'Save');
+
+    $optionStorage = \Drupal::entityTypeManager()->getStorage('voting_option');
+    $options = $optionStorage->loadByProperties([
+      'question_id' => $entity->id(),
+      'label' => 'My Inline Option',
+    ]);
+    $this->assertCount(1, $options);
+  }
+
 }
